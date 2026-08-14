@@ -57,7 +57,7 @@ describe("suwayomi plugin", function()
         assert.are.equal(plugin, runtime.registered_menu_plugin)
     end)
 
-    it("adds the plugin under the search menu section and opens the Suwayomi hub", function()
+    it("adds the plugin under the search menu section and opens the Library directly", function()
         local menu_items = {}
         local plugin = build_plugin()
 
@@ -71,16 +71,11 @@ describe("suwayomi plugin", function()
 
         menu_items.suwayomi.callback()
 
-        assert.is_table(runtime.shown_home_dialog)
-        assert.are.equal("Library", runtime.shown_home_dialog.actions[1].text)
-        assert.are.equal("Browse", runtime.shown_home_dialog.actions[2].text)
-        assert.are.equal("Downloads", runtime.shown_home_dialog.actions[3].text)
-        assert.are.equal("Sync", runtime.shown_home_dialog.actions[4].text)
-        assert.are.equal("Settings", runtime.shown_home_dialog.actions[5].text)
-        assert.are.equal("Close plugin", runtime.shown_home_dialog.actions[6].text)
+        assert.is_nil(runtime.shown_home_dialog)
+        assert.are.equal(1, runtime.shown_library_calls)
     end)
 
-    it("closes the launching KOReader menu before opening the Suwayomi hub", function()
+    it("closes the launching KOReader menu before opening the Library", function()
         local menu_items = {}
         local plugin = build_plugin()
         local parent_menu = { name = "search-menu" }
@@ -89,7 +84,7 @@ describe("suwayomi plugin", function()
         menu_items.suwayomi.callback(parent_menu)
 
         assert.are.same({ parent_menu }, runtime.closed_widgets)
-        assert.is_table(runtime.shown_home_dialog)
+        assert.are.equal(1, runtime.shown_library_calls)
     end)
 
     it("adds only the reader return action in book mode when the document is from Suwayomi", function()

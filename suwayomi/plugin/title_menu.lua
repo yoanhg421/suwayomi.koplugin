@@ -21,10 +21,11 @@ end
 
 local Methods = {}
 
-function Methods:buildTitleBarActions(screen_actions)
-    local actions = {
-        { id = "home", text = I18n.t("Suwayomi home") },
-    }
+function Methods:buildTitleBarActions(screen_actions, hide_home)
+    local actions = {}
+    if not hide_home then
+        table.insert(actions, { id = "home", text = I18n.t("Suwayomi home") })
+    end
     for _, action in ipairs(screen_actions or {}) do
         table.insert(actions, action)
     end
@@ -69,7 +70,7 @@ function Methods:showTitleBarActionMenu(menu, screen_options)
     local anchor = titleBarAnchor(menu)
     return SuwayomiUI.showActionMenu({
         title = screen_options.title or I18n.t("Suwayomi"),
-        actions = self:buildTitleBarActions(screen_options.actions),
+        actions = self:buildTitleBarActions(screen_options.actions, screen_options.hide_home),
         vertical = screen_options.vertical,
         columns = screen_options.columns,
         destructive_actions_at_bottom = screen_options.destructive_actions_at_bottom,

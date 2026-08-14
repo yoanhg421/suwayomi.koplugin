@@ -205,7 +205,13 @@ end
 
 
 function Methods:onSuwayomiAction()
-    self:showNotImplemented(I18n.t("Open Search > Suwayomi to access the plugin menu."))
+    if self.needsOnboardingSetup and self:needsOnboardingSetup() then
+        self:showOnboardingSetup({ first_run = true })
+        return
+    end
+    self:showTopLevelScreen("library", function()
+        return self:showLibrary()
+    end)
 end
 
 
@@ -234,7 +240,9 @@ function Methods:addToMainMenu(menu_items)
                 self:showOnboardingSetup({ first_run = true })
                 return
             end
-            self:showHome()
+            self:showTopLevelScreen("library", function()
+                return self:showLibrary()
+            end)
         end,
     }
 end

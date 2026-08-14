@@ -189,6 +189,10 @@ function Helper.install(options)
             local instance = {
                 options = client_options,
             }
+            function instance:showLibrary()
+                state.shown_library_calls = (state.shown_library_calls or 0) + 1
+                return true
+            end
             table.insert(state.client_instances, instance)
             return instance
         end

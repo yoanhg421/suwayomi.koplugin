@@ -1098,6 +1098,7 @@ function BrowseUI.showMangaMenu(manga_list, onSelectCallback, options)
         on_title_bar_left_hold = options.on_title_bar_left_hold,
         thumbnail_credentials = options.thumbnail_credentials,
         on_page_changed = options.on_page_changed,
+        grid = options.grid ~= false,
     }
 end
 
@@ -1117,6 +1118,7 @@ function BrowseUI.updateMangaMenu(menu, manga_list, onSelectCallback, options)
         on_title_bar_left_hold = options.on_title_bar_left_hold,
         thumbnail_credentials = options.thumbnail_credentials,
         on_page_changed = options.on_page_changed,
+        grid = options.grid ~= false,
     })
 end
 
@@ -1151,6 +1153,7 @@ function BrowseUI.showLibraryMangaMenu(manga_list, onSelectCallback, options)
         on_title_bar_left_tap = options.on_title_bar_left_tap,
         on_title_bar_left_hold = options.on_title_bar_left_hold,
         thumbnail_credentials = options.thumbnail_credentials,
+        grid = options.grid ~= false,
     }
 end
 
@@ -1168,6 +1171,7 @@ function BrowseUI.updateLibraryMangaMenu(menu, manga_list, onSelectCallback, opt
         on_title_bar_left_tap = options.on_title_bar_left_tap,
         on_title_bar_left_hold = options.on_title_bar_left_hold,
         thumbnail_credentials = options.thumbnail_credentials,
+        grid = options.grid ~= false,
     })
 end
 

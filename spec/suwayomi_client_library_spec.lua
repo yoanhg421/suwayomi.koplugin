@@ -117,6 +117,47 @@ describe("suwayomi/client library flows", function()
         assert.are.equal("library-menu", tracked[1].widget.name)
     end)
 
+    it("wires the library title-bar menu to the plugin hub actions, excluding the redundant Library entry", function()
+        local captured_options
+        local browse_called = false
+        local client = newClient({
+            capture_title_options = function(menu_options)
+                captured_options = menu_options
+            end,
+            api = {
+                fetchCategories = function()
+                    return { ok = true, categories = {} }
+                end,
+                fetchLibraryManga = function()
+                    return { ok = true, manga = { { id = "m1", title = "Frieren" } }, total_count = 1 }
+                end,
+            },
+            ui = {
+                showLibraryMangaMenu = function()
+                    return { name = "library-menu" }
+                end,
+            },
+        })
+        client.plugin.buildHomeActions = function()
+            return {
+                { id = "library", text = "Library", callback = function() error("should be filtered out") end },
+                { id = "browse", text = "Browse", callback = function() browse_called = true end },
+                { id = "close", text = "Close plugin", callback = function() end },
+            }
+        end
+
+        client:showLibrary()
+
+        assert.is_true(captured_options.hide_home)
+        assert.are.equal(2, #captured_options.actions)
+        assert.are.equal("browse", captured_options.actions[1].id)
+        assert.are.equal("close", captured_options.actions[2].id)
+
+        local handled = captured_options.onSelect(captured_options.actions[1])
+        assert.is_true(handled)
+        assert.is_true(browse_called)
+    end)
+
     it("lets manga actions refresh the visible library row after membership changes", function()
         local updated_manga
         local updated_menu

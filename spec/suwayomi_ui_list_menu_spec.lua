@@ -44,6 +44,7 @@ describe("suwayomi/ui/list_menu", function()
         stubbed_modules = {
             "ui/bidi",
             "ffi/blitbuffer",
+            "ui/widget/container/bottomcontainer",
             "ui/widget/container/centercontainer",
             "device",
             "ui/font",
@@ -84,6 +85,7 @@ describe("suwayomi/ui/list_menu", function()
             return {
                 COLOR_BLACK = "black",
                 COLOR_DARK_GRAY = "dark_gray",
+                COLOR_WHITE = "white",
             }
         end
         package.preload.device = function()
@@ -157,6 +159,7 @@ describe("suwayomi/ui/list_menu", function()
             }
         end
         for _, name in ipairs({
+            "ui/widget/container/bottomcontainer",
             "ui/widget/container/centercontainer",
             "ui/widget/container/framecontainer",
             "ui/gesturerange",

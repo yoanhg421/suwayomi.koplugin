@@ -11,6 +11,7 @@
 
 local BD = require("ui/bidi")
 local Blitbuffer = require("ffi/blitbuffer")
+local BottomContainer = require("ui/widget/container/bottomcontainer")
 local CenterContainer = require("ui/widget/container/centercontainer")
 local Device = require("device")
 local Font = require("ui/font")
@@ -485,6 +486,149 @@ function ListMenuItem:onHoldSelect()
     return true
 end
 
+-- Grid cell rendering (Mihon/Tachiyomi-style cover grid): full-bleed cover
+-- image with the title overlaid on a solid strip at the bottom.
+local GRID_ITEM_MARGIN = scaled(10)
+
+local GridMenuItem = InputContainer:extend{
+    entry = nil,
+    text = nil,
+    mandatory = nil,
+    dimen = nil,
+    menu = nil,
+    show_parent = nil,
+}
+
+function GridMenuItem:init()
+    self.ges_events = {
+        TapSelect = {
+            GestureRange:new{
+                ges = "tap",
+                range = self.dimen,
+            },
+        },
+        HoldSelect = {
+            GestureRange:new{
+                ges = "hold",
+                range = self.dimen,
+            },
+        },
+    }
+    self[1] = self:buildCell(self.dimen.w, self.dimen.h)
+end
+
+function GridMenuItem:buildCoverImage(width, height)
+    local border = Size.border.thin
+    local image_width = math.max(1, width - 2 * border)
+    local image_height = math.max(1, height - 2 * border)
+    local image
+    if self.entry.thumbnail_path then
+        local is_decoded_path = ThumbnailCache.isDecodedPath and ThumbnailCache.isDecodedPath(self.entry.thumbnail_path)
+        local decoded_image
+        if is_decoded_path and ThumbnailCache.loadDecoded then
+            local ok
+            ok, decoded_image = pcall(ThumbnailCache.loadDecoded, self.entry.thumbnail_path)
+            decoded_image = ok and decoded_image or nil
+        end
+        if decoded_image then
+            image = newImageWidget{
+                image = decoded_image,
+                width = image_width,
+                height = image_height,
+                scale_factor = 0,
+            }
+        end
+    end
+    if not image then
+        image = CenterContainer:new{
+            dimen = Geom:new{ w = image_width, h = image_height },
+            TextWidget:new{
+                text = placeholderText(self.text),
+                face = fontFace("cfont", math.max(10, math.floor(math.min(image_width, image_height) / 6))),
+                fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+            },
+        }
+    end
+    return FrameContainer:new{
+        width = width,
+        height = height,
+        margin = 0,
+        padding = 0,
+        bordersize = border,
+        image,
+    }
+end
+
+function GridMenuItem:buildTitleOverlay(width)
+    local horizontal_padding = scaled(6)
+    local vertical_padding = scaled(4)
+    local title_face = fontFace("cfont", fontSizeForRow(9, 11, self.dimen.h))
+    local line_height = textBoxLineHeight(title_face)
+    local title_width = math.max(1, width - 2 * horizontal_padding)
+    local title = TextBoxWidget:new{
+        text = BD.auto(tostring(self.text or "")),
+        face = title_face,
+        width = title_width,
+        height = line_height,
+        height_adjust = true,
+        height_overflow_show_ellipsis = true,
+        alignment = "left",
+        bold = true,
+        fgcolor = Blitbuffer.COLOR_WHITE,
+        bgcolor = Blitbuffer.COLOR_BLACK,
+    }
+    -- Build the padding as real sibling widgets (rather than relying on
+    -- FrameContainer's explicit width/height, which paintTo uses for the
+    -- background fill but getSize() ignores) so the container's natural
+    -- content size already matches the full cell width, keeping this flush
+    -- with the cover instead of drifting off its right/bottom edge.
+    return FrameContainer:new{
+        margin = 0,
+        padding = 0,
+        bordersize = 0,
+        background = Blitbuffer.COLOR_BLACK,
+        VerticalGroup:new{
+            VerticalSpan:new{ width = vertical_padding },
+            HorizontalGroup:new{
+                HorizontalSpan:new{ width = horizontal_padding },
+                title,
+                HorizontalSpan:new{ width = horizontal_padding },
+            },
+            VerticalSpan:new{ width = vertical_padding },
+        },
+    }
+end
+
+function GridMenuItem:buildCell(width, height)
+    local dimen = Geom:new{ w = width, h = height }
+    return OverlapGroup:new{
+        dimen = dimen,
+        self:buildCoverImage(width, height),
+        BottomContainer:new{
+            dimen = dimen,
+            self:buildTitleOverlay(width),
+        },
+    }
+end
+
+function GridMenuItem:onFocus()
+    return true
+end
+
+function GridMenuItem:onUnfocus()
+    return true
+end
+
+function GridMenuItem:onTapSelect()
+    self.menu:onMenuSelect(self.entry)
+    return true
+end
+
+function GridMenuItem:onHoldSelect()
+    self.menu:onMenuHold(self.entry)
+    return true
+end
+
 local function getItemText(item)
     if Menu.getMenuText then
         return Menu.getMenuText(item)
@@ -663,6 +807,136 @@ function ListMenu.setupItemHeights(menu)
         if index == #menu.item_table then
             table.insert(menu.page_items, page_items)
         end
+    end
+end
+
+function ListMenu.recalculateDimenGrid(menu, no_recalculate_dimen)
+    if no_recalculate_dimen and menu.item_dimen then
+        return
+    end
+    if not menu.inner_dimen or not Screen or not Screen.getWidth or not Screen.getHeight then
+        return
+    end
+
+    menu.portrait_mode = Screen:getWidth() <= Screen:getHeight()
+    local nb_cols = menu.portrait_mode
+        and (menu._suwayomi_grid_cols_portrait or 4)
+        or (menu._suwayomi_grid_cols_landscape or 6)
+    local nb_rows = menu.portrait_mode
+        and (menu._suwayomi_grid_rows_portrait or 3)
+        or (menu._suwayomi_grid_rows_landscape or 3)
+    menu.grid_columns = nb_cols
+
+    local others_height = 0
+    if menu.title_bar then
+        if not menu.is_borderless then
+            others_height = others_height + 2
+        end
+        if not menu.no_title then
+            others_height = others_height + menu.title_bar.dimen.h
+        end
+        if menu.page_info then
+            others_height = others_height + menu.page_info:getSize().h
+        end
+    end
+
+    local available_width = menu.inner_dimen.w
+    local available_height = menu.inner_dimen.h - others_height - Size.line.thin
+    menu.available_height = available_height
+
+    -- Use a fixed row/column count (rather than deriving rows from the cover
+    -- aspect ratio) so leftover vertical space doesn't get distributed into
+    -- fewer, stretched-taller rows.
+    local item_width = math.max(1, math.floor((available_width - (nb_cols + 1) * GRID_ITEM_MARGIN) / nb_cols))
+    local item_height = math.max(1, math.floor((available_height - (nb_rows + 1) * GRID_ITEM_MARGIN) / nb_rows))
+    menu.grid_rows = nb_rows
+
+    menu.perpage = nb_cols * nb_rows
+    menu.page_num = math.ceil(#menu.item_table / menu.perpage)
+    if menu.page_num > 0 and menu.page > menu.page_num then
+        menu.page = menu.page_num
+    end
+
+    menu.item_width = item_width
+    menu.item_height = item_height
+    menu._suwayomi_base_item_height = item_height
+    menu.item_dimen = Geom:new{
+        x = 0,
+        y = 0,
+        w = item_width,
+        h = item_height,
+    }
+end
+
+function ListMenu.updateItemsGrid(menu, select_number, no_recalculate_dimen)
+    local old_dimen = menu.dimen and menu.dimen:copy()
+    menu.layout = {}
+    menu.item_group:clear()
+    menu.page_info:resetLayout()
+    menu.return_button:resetLayout()
+    menu.content_group:resetLayout()
+    menu:_recalculateDimen(no_recalculate_dimen)
+    ListMenu.consumePendingItemNumber(menu)
+
+    local nb_cols = menu.grid_columns or 1
+    local items_nb = menu.perpage
+    local idx_offset = (menu.page - 1) * items_nb
+    local visible_items = {}
+
+    table.insert(menu.item_group, VerticalSpan:new{ width = GRID_ITEM_MARGIN })
+    local row
+    for idx = 1, items_nb do
+        local index = idx_offset + idx
+        local item = menu.item_table[index]
+        if item == nil then
+            break
+        end
+        item.idx = index
+        if index == menu.itemnumber then
+            select_number = idx
+        end
+        if item.thumbnail_url then
+            -- Request the thumbnail at the actual grid cell resolution instead of
+            -- the small size used for the row-mode thumbnail slot, so covers aren't
+            -- upscaled (and blurred) to fill the much larger grid cell.
+            item.thumbnail_width = menu.item_width
+            item.thumbnail_height = menu.item_height
+        end
+        ListMenu.prepareThumbnail(menu, item)
+
+        if (idx - 1) % nb_cols == 0 then
+            row = HorizontalGroup:new{}
+            table.insert(row, HorizontalSpan:new{ width = GRID_ITEM_MARGIN })
+            table.insert(menu.item_group, row)
+            table.insert(menu.item_group, VerticalSpan:new{ width = GRID_ITEM_MARGIN })
+            table.insert(menu.layout, {})
+        end
+
+        local item_widget = GridMenuItem:new{
+            entry = item,
+            text = getItemText(item),
+            mandatory = item.mandatory,
+            dimen = menu.item_dimen:copy(),
+            menu = menu,
+            show_parent = menu.show_parent,
+        }
+        table.insert(row, item_widget)
+        table.insert(row, HorizontalSpan:new{ width = GRID_ITEM_MARGIN })
+        table.insert(menu.layout[#menu.layout], item_widget)
+        table.insert(visible_items, item)
+    end
+
+    menu:updatePageInfo(select_number)
+    menu:mergeTitleBarIntoLayout()
+
+    UIManager:setDirty(menu.show_parent, function()
+        local refresh_dimen = old_dimen and old_dimen:combine(menu.dimen) or menu.dimen
+        return "ui", refresh_dimen, true
+    end)
+    ListMenu.startVisibleThumbnailJobs(menu, visible_items)
+    if type(menu._suwayomi_on_page_changed) == "function" and menu.page ~= menu._suwayomi_last_notified_page then
+        menu._suwayomi_last_notified_page = menu.page
+        menu._suwayomi_on_page_changed(menu, menu.page)
     end
 end
 
@@ -970,6 +1244,21 @@ function ListMenu.install(menu, options)
     menu._suwayomi_thumbnail_active = menu._suwayomi_thumbnail_active or {}
     menu._suwayomi_thumbnail_active_count = menu._suwayomi_thumbnail_active_count or 0
     menu._suwayomi_thumbnail_generation = menu._suwayomi_thumbnail_generation or 0
+    if options and options.grid ~= nil then
+        menu._suwayomi_grid_mode = options.grid == true
+    end
+    if options and options.grid_columns_portrait then
+        menu._suwayomi_grid_cols_portrait = options.grid_columns_portrait
+    end
+    if options and options.grid_columns_landscape then
+        menu._suwayomi_grid_cols_landscape = options.grid_columns_landscape
+    end
+    if options and options.grid_rows_portrait then
+        menu._suwayomi_grid_rows_portrait = options.grid_rows_portrait
+    end
+    if options and options.grid_rows_landscape then
+        menu._suwayomi_grid_rows_landscape = options.grid_rows_landscape
+    end
 
     if not menu._suwayomi_list_menu_installed then
         local original_on_close_widget = menu.onCloseWidget
@@ -977,9 +1266,15 @@ function ListMenu.install(menu, options)
         local original_on_menu_select = menu.onMenuSelect
         menu._suwayomi_original_recalculate_dimen = menu._recalculateDimen
         menu._recalculateDimen = function(self, no_recalculate_dimen)
+            if self._suwayomi_grid_mode then
+                return ListMenu.recalculateDimenGrid(self, no_recalculate_dimen)
+            end
             return ListMenu.recalculateDimen(self, no_recalculate_dimen)
         end
         menu.updateItems = function(self, select_number, no_recalculate_dimen)
+            if self._suwayomi_grid_mode then
+                return ListMenu.updateItemsGrid(self, select_number, no_recalculate_dimen)
+            end
             return ListMenu.updateItems(self, select_number, no_recalculate_dimen)
         end
         menu.onClose = function(self, ...)

@@ -13,6 +13,7 @@ describe("suwayomi/ui/manga_menu", function()
             "suwayomi/ui/list_menu",
             "ui/bidi",
             "ffi/blitbuffer",
+            "ui/widget/container/bottomcontainer",
             "ui/widget/container/centercontainer",
             "device",
             "ui/font",
@@ -82,6 +83,7 @@ describe("suwayomi/ui/manga_menu", function()
             return {
                 COLOR_BLACK = "black",
                 COLOR_DARK_GRAY = "dark_gray",
+                COLOR_WHITE = "white",
             }
         end
         package.preload.device = function()
@@ -115,6 +117,7 @@ describe("suwayomi/ui/manga_menu", function()
             return Geom
         end
         package.preload["ui/gesturerange"] = function() return widgetModule("gesture_range") end
+        package.preload["ui/widget/container/bottomcontainer"] = function() return widgetModule("bottom") end
         package.preload["ui/widget/container/centercontainer"] = function() return widgetModule("center") end
         package.preload["ui/widget/container/framecontainer"] = function() return widgetModule("frame") end
         package.preload["ui/widget/horizontalgroup"] = function() return widgetModule("horizontal_group") end

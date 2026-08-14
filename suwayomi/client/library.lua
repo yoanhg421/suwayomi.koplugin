@@ -148,8 +148,25 @@ function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
     end
 
     local library_manga = manga
+    local hub_actions = {}
+    if self.plugin.buildHomeActions then
+        for _, action in ipairs(self.plugin:buildHomeActions()) do
+            if action.id ~= "library" then
+                table.insert(hub_actions, action)
+            end
+        end
+    end
     local menu_options = self:getTitleBarMenuOptions({
         title = I18n.t("Suwayomi Library"),
+        actions = hub_actions,
+        hide_home = true,
+        onSelect = function(action)
+            if action and action.callback then
+                action.callback()
+                return true
+            end
+            return false
+        end,
     }) or {}
     menu_options.thumbnail_credentials = credentials
     local library_menu
