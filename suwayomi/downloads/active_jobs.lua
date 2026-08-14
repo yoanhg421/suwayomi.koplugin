@@ -75,13 +75,20 @@ end
 
 function ActiveJobs:runDownloaderJob(queued)
     if queued.downloader.downloadChapterWithProgress then
-        queued.downloader:downloadChapterWithProgress(
-            queued.credentials,
-            queued.download_directory,
-            queued.manga,
-            queued.chapter,
-            queued.progress_path
-        )
+        local ok, err = pcall(function()
+            queued.downloader:downloadChapterWithProgress(
+                queued.credentials,
+                queued.download_directory,
+                queued.manga,
+                queued.chapter,
+                queued.progress_path
+            )
+        end)
+        if not ok then
+            local first_line = tostring(err):match("^[^\n]+") or tostring(err)
+            local trace = tostring(debug and debug.traceback and debug.traceback(err) or "")
+            self:writeProgressFallback(queued.progress_path, "failed", 0, 0, "", "Worker crashed: " .. first_line .. " " .. trace)
+        end
         return
     end
 
@@ -364,11 +371,11 @@ function ActiveJobs:finishFromProgress(active, progress)
     end
 end
 
-function ActiveJobs:finishWithoutProgress(active)
+function ActiveJobs:finishWithoutProgress(active, progress)
     local queue = self.queue
     self:removeJob(active)
     os.remove(active.progress_path)
-    local archive_path = queue:getExistingArchivePath(active)
+    local archive_path = queue:getExistingArchivePath(active, progress)
     if archive_path then
         queue:removePersistentJob(active.key or queue:getKey(active.manga, active.chapter))
         queue:setStatus(active.manga, active.chapter, {
@@ -380,8 +387,12 @@ function ActiveJobs:finishWithoutProgress(active)
         return
     end
 
+    local detail = I18n.t("Chapter download failed.")
+    if progress and progress.error and tostring(progress.error) ~= "" then
+        detail = tostring(progress.error)
+    end
     queue:setStatus(active.manga, active.chapter, { state = "failed" })
-    local message = queue:formatFailureMessage(active.manga, active.chapter, I18n.t("Chapter download failed."))
+    local message = queue:formatFailureMessage(active.manga, active.chapter, detail)
     queue:upsertPersistentJob(queue:buildPersistentJob(active.manga, active.chapter, active.download_directory, "failed", {
         started_at = active.started_at,
         last_progress_at = queue.now(),
@@ -431,7 +442,7 @@ function ActiveJobs:poll()
                 if terminal then
                     self:finishFromProgress(active, progress)
                 else
-                    self:finishWithoutProgress(active)
+                    self:finishWithoutProgress(active, progress)
                 end
             end
         end

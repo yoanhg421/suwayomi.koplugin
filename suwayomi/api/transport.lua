@@ -340,6 +340,7 @@ function Transport.downloadBinary(credentials, page_url, log_debug_event, reques
         return {
             ok = true,
             body = body,
+            bytes = #body,
             content_type = response_headers["content-type"] or response_headers["Content-Type"],
         }
     end
@@ -415,10 +416,10 @@ function Transport.downloadChapterArchive(credentials, chapter_id, target_path, 
     local header_bytes_count = 0
     local head_chunks = {}
     local head_bytes_count = 0
-    local tail_bytes = ""
     local write_error
     local started_at = now()
     local max_bytes = request_options.max_bytes or MAX_BINARY_RESPONSE_BYTES
+    local total_timeout = request_options.total_timeout_seconds or RESPONSE_TOTAL_TIMEOUT_SECONDS
 
     local ok, code, response_headers = client.request{
         url = request_url,
@@ -426,7 +427,7 @@ function Transport.downloadChapterArchive(credentials, chapter_id, target_path, 
         headers = headers,
         sink = function(chunk)
             if chunk then
-                if now() - started_at > RESPONSE_TOTAL_TIMEOUT_SECONDS then
+                if now() - started_at > total_timeout then
                     write_error = RESPONSE_TIMEOUT_ERROR
                     return nil, write_error
                 end
@@ -449,7 +450,6 @@ function Transport.downloadChapterArchive(credentials, chapter_id, target_path, 
                     table.insert(head_chunks, head_piece)
                     head_bytes_count = head_bytes_count + #head_piece
                 end
-                tail_bytes = (tail_bytes .. chunk):sub(-65557)
                 response_bytes = response_bytes + #chunk
             end
             return 1
@@ -457,6 +457,17 @@ function Transport.downloadChapterArchive(credentials, chapter_id, target_path, 
         timeout = REQUEST_TIMEOUT_SECONDS,
     }
     handle:close()
+
+    local tail_bytes = ""
+    local read_handle = io.open(target_path, "rb")
+    if read_handle then
+        local size = read_handle:seek("end")
+        if size and size > 0 then
+            read_handle:seek("set", math.max(0, size - 65557))
+            tail_bytes = read_handle:read(65557) or ""
+        end
+        read_handle:close()
+    end
 
     response_headers = response_headers or {}
     local content_length = tonumber(response_headers["content-length"] or response_headers["Content-Length"])

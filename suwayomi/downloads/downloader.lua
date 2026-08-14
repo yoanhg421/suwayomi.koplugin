@@ -452,7 +452,7 @@ end
 
 function Downloader:downloadDirectChapterArchive(credentials, download_directory, manga, chapter)
     if not SuwayomiAPI.downloadChapterArchive or not chapter or chapter.id == nil then
-        return nil
+        return nil, "downloadChapterArchive unavailable or missing chapter id"
     end
 
     if not download_directory or download_directory == "" then
@@ -474,18 +474,27 @@ function Downloader:downloadDirectChapterArchive(credentials, download_directory
     self:cleanupPartialFile(partial_path)
 
     local archive_result = callWithTransientRetry(function()
-        return SuwayomiAPI.downloadChapterArchive(credentials, chapter.id, partial_path)
+        return SuwayomiAPI.downloadChapterArchive(credentials, chapter.id, partial_path, { max_bytes = 64 * 1024 * 1024 })
     end)
+    if not archive_result then
+        self:cleanupPartialFile(partial_path)
+        return nil, "archive_result was nil"
+    end
     if not archive_result.ok then
         self:cleanupPartialFile(partial_path)
-        return nil
+        return nil, "downloadChapterArchive not ok: " .. tostring(archive_result.error)
     end
-    if (archive_result.bytes or 0) <= 0
-        or not self:isArchiveContentType(archive_result.content_type)
-        or not self:isZipArchiveResult(archive_result, partial_path)
-    then
+    if (archive_result.bytes or 0) <= 0 then
         self:cleanupPartialFile(partial_path)
-        return nil
+        return nil, "archive has 0 bytes"
+    end
+    if not self:isArchiveContentType(archive_result.content_type) then
+        self:cleanupPartialFile(partial_path)
+        return nil, "archive content-type rejected: " .. tostring(archive_result.content_type)
+    end
+    if not self:isZipArchiveResult(archive_result, partial_path) then
+        self:cleanupPartialFile(partial_path)
+        return nil, "archive is not a valid zip"
     end
 
     return self:finalizePartialArchive(partial_path, chapter_path, self:findExistingChapterPath(download_directory, manga, chapter))
@@ -726,6 +735,8 @@ function Downloader:downloadChapter(credentials, download_directory, manga, chap
 end
 
 function Downloader:downloadChapterWithProgress(credentials, download_directory, manga, chapter, progress_path)
+    self:writeProgress(progress_path, "downloading", 0, 0, "")
+
     local direct_result = self:downloadDirectChapterArchive(credentials, download_directory, manga, chapter)
     if direct_result then
         self:writeProgress(
@@ -751,6 +762,8 @@ function Downloader:downloadChapterWithProgress(credentials, download_directory,
         )
         return start_result
     end
+
+    self:writeProgress(progress_path, "downloading", 0, start_result.total, start_result.path)
 
     local result
     repeat
