@@ -137,21 +137,20 @@ end
 
 function SuwayomiUI.showHomeDialog(options, onSelectCallback)
     local UIManager = require("ui/uimanager")
-    local dialog
-    local buttons = {}
-    local row = {}
-
+    local ListMenu = require("suwayomi/ui/list_menu")
     options = options or {}
-    local columns = options.vertical and 1 or (options.columns or 1)
-    for action_index = 1, #(options.actions or {}) do
-        local action = options.actions[action_index]
-        table.insert(row, {
+
+    local menu
+    local item_table = {}
+    for _, action in ipairs(options.actions or {}) do
+        table.insert(item_table, {
             text = action.text,
             enabled = action.enabled,
-            enabled_func = action.enabled_func,
+            select_enabled = action.enabled,
+            keep_menu_open = true,
             callback = function()
                 if action.close_before_select ~= false then
-                    UIManager:close(dialog)
+                    UIManager:close(menu)
                     if options.onClose then
                         options.onClose()
                     end
@@ -163,22 +162,14 @@ function SuwayomiUI.showHomeDialog(options, onSelectCallback)
                 end
             end,
         })
-        if #row == columns then
-            table.insert(buttons, row)
-            row = {}
-        end
     end
 
-    if #row > 0 then
-        table.insert(buttons, row)
-    end
-
-    dialog = ButtonDialog:new{
+    menu = ListMenu.show({
         title = options.title or I18n.t("Suwayomi"),
-        buttons = buttons,
-    }
-    UIManager:show(dialog)
-    return dialog
+        item_table = item_table,
+        on_close = options.onClose,
+    })
+    return menu
 end
 
 local function formatActionButtonText(action)

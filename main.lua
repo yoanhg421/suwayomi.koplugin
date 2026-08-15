@@ -6,7 +6,6 @@
 -- Dependencies: KOReader runtime modules and plugin-local suwayomi/* modules.
 -- External data: delegated to focused controllers and services.
 
-local Dispatcher = require("dispatcher")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local SuwayomiAPI = require("suwayomi/api")
@@ -202,15 +201,6 @@ function SuwayomiPlugin:withChapterMenuRefreshSuppressed(callback)
     return result
 end
 
-function SuwayomiPlugin:onDispatcherRegisterActions()
-    Dispatcher:registerAction("suwayomi_action", {
-        category = "none",
-        event = "SuwayomiAction",
-        title = I18n.t("Suwayomi"),
-        filemanager = true,
-    })
-end
-
 function SuwayomiPlugin:isBookMode()
     return self.document ~= nil or (self.ui and self.ui.document ~= nil)
 end
@@ -220,7 +210,6 @@ function SuwayomiPlugin:init()
         SuwayomiAPI.setDebugLogger(SuwayomiDebug.log)
     end
     SuwayomiDebug.log({ operation = "plugin_init", event = "start" })
-    self:onDispatcherRegisterActions()
     self.selected_chapters = self.selected_chapters or {}
     self.selection_mode = self.selection_mode == true
     self:getDownloadQueue():recover()

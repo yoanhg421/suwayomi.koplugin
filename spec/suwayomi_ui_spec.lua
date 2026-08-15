@@ -1768,7 +1768,7 @@ describe("suwayomi/ui", function()
         assert.is_true(updated)
     end)
 
-    it("shows the Suwayomi home hub as single-column actions by default", function()
+    it("shows the Suwayomi home hub as a full-screen list menu", function()
         local ui = require("suwayomi/ui")
         local selected = {}
 
@@ -1787,11 +1787,11 @@ describe("suwayomi/ui", function()
         end)
 
         assert.are.equal("Suwayomi", shown_dialog.title)
-        assert.are.equal("Library", shown_dialog.buttons[1][1].text)
-        assert.are.equal("Browse", shown_dialog.buttons[2][1].text)
-        assert.are.equal("Downloads", shown_dialog.buttons[3][1].text)
+        assert.are.equal("Library", shown_dialog.item_table[1].text)
+        assert.are.equal("Browse", shown_dialog.item_table[2].text)
+        assert.are.equal("Downloads", shown_dialog.item_table[3].text)
 
-        shown_dialog.buttons[2][1].callback()
+        shown_dialog.item_table[2].callback()
 
         assert.are.same({ "close", "home-close", "browse" }, events)
         assert.are.equal(shown_dialog, closed_dialog)
@@ -1809,7 +1809,7 @@ describe("suwayomi/ui", function()
             table.insert(events, action.id)
         end)
 
-        shown_dialog.buttons[1][1].callback()
+        shown_dialog.item_table[1].callback()
 
         assert.are.same({ "close" }, events)
         assert.is_nil(closed_dialog)

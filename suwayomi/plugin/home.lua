@@ -126,12 +126,11 @@ end
 
 
 function Methods:showHome()
-    local dialog
-    dialog = SuwayomiUI.showHomeDialog({
+    local dialog = SuwayomiUI.showHomeDialog({
         actions = self:buildHomeActions(),
         onClose = function()
             if self.suwayomi_navigation then
-                self.suwayomi_navigation:pop(dialog)
+                self.suwayomi_navigation:pop(self.suwayomi_home_menu)
             end
         end,
     }, function(action)
@@ -139,6 +138,7 @@ function Methods:showHome()
             action.callback()
         end
     end)
+    self.suwayomi_home_menu = dialog
     if dialog and self.trackSuwayomiScreen then
         self:trackSuwayomiScreen("home", dialog)
     end
@@ -222,17 +222,6 @@ function Methods:closeLoadingMessage(loading_message)
 end
 
 
-function Methods:onSuwayomiAction()
-    if self.needsOnboardingSetup and self:needsOnboardingSetup() then
-        self:showOnboardingSetup({ first_run = true })
-        return
-    end
-    self:showTopLevelScreen("library", function()
-        return self:showLibrary()
-    end)
-end
-
-
 function Methods:addToMainMenu(menu_items)
     if self:isBookMode() then
         local context = self.getCurrentReaderReturnContext and self:getCurrentReaderReturnContext() or nil
@@ -251,16 +240,14 @@ function Methods:addToMainMenu(menu_items)
 
     menu_items.suwayomi = {
         text = I18n.t("Suwayomi"),
-        sorting_hint = "search",
+        sorting_hint = "main",
         callback = function(menu)
             self:closeMenu(menu)
             if self.needsOnboardingSetup and self:needsOnboardingSetup() then
                 self:showOnboardingSetup({ first_run = true })
                 return
             end
-            self:showTopLevelScreen("library", function()
-                return self:showLibrary()
-            end)
+            self:showHome()
         end,
     }
 end

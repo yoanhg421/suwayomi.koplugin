@@ -18,7 +18,7 @@ describe("suwayomi plugin", function()
         return plugin_class(instance or {})
     end
 
-    it("registers a file-manager dispatcher action and main-menu entry on init", function()
+    it("registers a main-menu entry on init without a dispatcher action", function()
         local plugin = build_plugin({
             ui = {
                 menu = {
@@ -32,11 +32,7 @@ describe("suwayomi plugin", function()
         plugin:init()
 
         assert.are.equal(plugin, runtime.registered_menu_plugin)
-        assert.are.equal(1, #runtime.registered_actions)
-        assert.are.equal("suwayomi_action", runtime.registered_actions[1].name)
-        assert.are.equal("Suwayomi", runtime.registered_actions[1].definition.title)
-        assert.are.equal(true, runtime.registered_actions[1].definition.filemanager)
-        assert.is_nil(runtime.registered_actions[1].definition.general)
+        assert.are.equal(0, #runtime.registered_actions)
     end)
 
     it("registers a conditional reader-menu entry when initialized in book mode", function()
@@ -57,7 +53,7 @@ describe("suwayomi plugin", function()
         assert.are.equal(plugin, runtime.registered_menu_plugin)
     end)
 
-    it("adds the plugin under the search menu section and opens the Library directly", function()
+    it("adds the plugin to the main menu and opens the Suwayomi home screen", function()
         local menu_items = {}
         local plugin = build_plugin()
 
@@ -65,26 +61,27 @@ describe("suwayomi plugin", function()
 
         assert.is_table(menu_items.suwayomi)
         assert.are.equal("Suwayomi", menu_items.suwayomi.text)
-        assert.are.equal("search", menu_items.suwayomi.sorting_hint)
+        assert.are.equal("main", menu_items.suwayomi.sorting_hint)
         assert.is_function(menu_items.suwayomi.callback)
         assert.is_nil(menu_items.suwayomi.sub_item_table)
 
         menu_items.suwayomi.callback()
 
-        assert.is_nil(runtime.shown_home_dialog)
-        assert.are.equal(1, runtime.shown_library_calls)
+        assert.is_table(runtime.shown_home_dialog)
+        assert.is_nil(runtime.shown_library_calls)
     end)
 
-    it("closes the launching KOReader menu before opening the Library", function()
+    it("closes the launching KOReader menu before opening the Suwayomi home screen", function()
         local menu_items = {}
         local plugin = build_plugin()
-        local parent_menu = { name = "search-menu" }
+        local parent_menu = { name = "main-menu" }
 
         plugin:addToMainMenu(menu_items)
         menu_items.suwayomi.callback(parent_menu)
 
         assert.are.same({ parent_menu }, runtime.closed_widgets)
-        assert.are.equal(1, runtime.shown_library_calls)
+        assert.is_table(runtime.shown_home_dialog)
+        assert.is_nil(runtime.shown_library_calls)
     end)
 
     it("adds only the reader return action in book mode when the document is from Suwayomi", function()
