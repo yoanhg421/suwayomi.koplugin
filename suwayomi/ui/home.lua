@@ -1,10 +1,10 @@
 -- Boundary: Suwayomi home screen presentation.
 --
--- Responsibility: show the library as a full-screen ListMenu with a custom
--- top status bar and FileManager top-bar passthrough.
--- Owned state: the ListMenu and its passthrough handleEvent wrapper.
--- Dependencies: ListMenu, SuwayomiStatusBar, KOReader widgets and status modules.
--- External data: rendered on top of FileManager via UIManager:show.
+-- Responsibility: build and show the full-screen Suwayomi home widget, which
+-- wraps the grid menu with a custom status bar and bottom tab bar.
+-- Owned state: status refresh scheduling.
+-- Dependencies: ListMenu, SuwayomiStatusBar, SuwayomiBottomBar,
+--               SuwayomiHomeWidget, KOReader UIManager and Device.
 
 local UIManager = require("ui/uimanager")
 local Device    = require("device")
@@ -12,6 +12,8 @@ local Device    = require("device")
 local ListMenu       = require("suwayomi/ui/list_menu")
 local ListRows       = require("suwayomi/ui/list_rows")
 local SuwayomiStatusBar = require("suwayomi/ui/status_bar")
+local SuwayomiBottomBar = require("suwayomi/ui/bottom_bar")
+local SuwayomiHomeWidget = require("suwayomi/ui/home_widget")
 
 local SuwayomiHome = {}
 
@@ -71,67 +73,15 @@ local function scheduleStatusRefresh(menu)
     UIManager:scheduleIn(60, menu._suwayomi_status_update)
 end
 
-local function forwardEventToFileManager(event)
-    local NEVER_FORWARD = {
-        onCloseWidget   = true,
-        onFlushSettings = true,
-        onShow          = true,
-        onClose         = true,
+local function defaultBottomActions(home_ref)
+    return {
+        { text = "Library",  action = function() end },
+        { text = "Browse",   action = function() end },
+        { text = "Downloads", action = function() end },
+        { text = "Sync",     action = function() end },
+        { text = "Settings", action = function() end },
+        { text = "Close",    action = function() UIManager:close(home_ref.home) end },
     }
-
-    if NEVER_FORWARD[event.handler] then
-        return nil
-    end
-
-    local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
-    if not ok or not FileManager then
-        return nil
-    end
-    local fm = FileManager.instance
-    if not fm or fm == SuwayomiHome then
-        return nil
-    end
-    return fm:handleEvent(event)
-end
-
-local function installGesturePassthrough(menu)
-    local original_handleEvent = menu.handleEvent
-    menu.handleEvent = function(self, event)
-        if original_handleEvent(self, event) then
-            return true
-        end
-
-        if event.handler == "onGesture" then
-            local ev = (event.args or {})[1]
-            if ev then
-                local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
-                if ok and FileManager then
-                    local fm = FileManager.instance
-                    if fm and fm.menu and fm.menu._ordered_touch_zones then
-                        for _, tzone in ipairs(fm.menu._ordered_touch_zones) do
-                            if tzone.gs_range:match(ev) and tzone.handler(ev) then
-                                return true
-                            end
-                        end
-                    end
-                end
-            end
-            return false
-        end
-
-        return forwardEventToFileManager(event)
-    end
-
-    local original_onCloseWidget = menu.onCloseWidget
-    menu.onCloseWidget = function(self, ...)
-        if self._suwayomi_status_update then
-            UIManager:unschedule(self._suwayomi_status_update)
-            self._suwayomi_status_update = nil
-        end
-        if original_onCloseWidget then
-            return original_onCloseWidget(self, ...)
-        end
-    end
 end
 
 function SuwayomiHome.show(manga_list, onSelectCallback, options)
@@ -150,12 +100,23 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
         left_text = left,
         right_text = right,
     }
+
+    local home_ref = { home = nil }
+    local bottom_actions = options.bottom_actions or defaultBottomActions(home_ref)
+    local bottom_bar = SuwayomiBottomBar:new{
+        buttons = bottom_actions,
+    }
+    options.footer_widget = bottom_bar
+
     local menu = ListMenu.create(options)
     if menu.title_bar then
         menu.title_bar.show_parent = menu
     end
-    installGesturePassthrough(menu)
-    UIManager:show(menu)
+
+    local home = SuwayomiHomeWidget:new{ menu = menu }
+    home_ref.home = home
+
+    UIManager:show(home)
     scheduleStatusRefresh(menu)
     return menu
 end
