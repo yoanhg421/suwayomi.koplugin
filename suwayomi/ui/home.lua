@@ -1,22 +1,23 @@
 -- Boundary: Suwayomi home screen presentation.
 --
--- Responsibility: show the library as a full-screen ListMenu while keeping
--- the KOReader top bar / FileManager menu touch zones accessible.
+-- Responsibility: show the library as a full-screen ListMenu with a custom
+-- top status bar and FileManager top-bar passthrough.
 -- Owned state: the ListMenu and its passthrough handleEvent wrapper.
--- Dependencies: ListMenu, KOReader widgets and status modules.
+-- Dependencies: ListMenu, SuwayomiStatusBar, KOReader widgets and status modules.
 -- External data: rendered on top of FileManager via UIManager:show.
 
 local UIManager = require("ui/uimanager")
 local Device    = require("device")
 
-local I18n     = require("suwayomi/i18n")
-local ListMenu = require("suwayomi/ui/list_menu")
-local ListRows = require("suwayomi/ui/list_rows")
+local ListMenu       = require("suwayomi/ui/list_menu")
+local ListRows       = require("suwayomi/ui/list_rows")
+local SuwayomiStatusBar = require("suwayomi/ui/status_bar")
 
 local SuwayomiHome = {}
 
-local function buildStatusString()
-    local parts = {}
+local function buildStatusStrings()
+    local left_parts = {}
+    local right_parts = {}
 
     local ok_dt, datetime = pcall(require, "datetime")
     if ok_dt and datetime and datetime.secondsToHour then
@@ -24,32 +25,38 @@ local function buildStatusString()
             and _G.G_reader_settings:isTrue("twelve_hour_clock")
         local time_str = datetime.secondsToHour(os.time(), twelve_hour)
         if time_str then
-            table.insert(parts, time_str)
+            table.insert(left_parts, time_str)
         end
     end
 
     if Device:hasBattery() then
         local powerd = Device:getPowerDevice()
         if powerd and powerd.getCapacity then
-            table.insert(parts, tostring(powerd:getCapacity()) .. "%")
+            table.insert(right_parts, tostring(powerd:getCapacity()) .. "%")
         end
     end
 
     local ok_net, NetworkMgr = pcall(require, "ui/network/manager")
     if ok_net and NetworkMgr and type(NetworkMgr.isWifiOn) == "function"
             and NetworkMgr:isWifiOn() then
-        table.insert(parts, "Wi-Fi")
+        table.insert(right_parts, "Wi-Fi")
     end
 
-    if #parts == 0 then
-        return " "
-    end
-    return table.concat(parts, " · ")
+    local left = #left_parts > 0 and table.concat(left_parts, " ") or " "
+    local right = #right_parts > 0 and table.concat(right_parts, " · ") or " "
+    return left, right
 end
 
-local function updateStatusSubtitle(menu)
-    if menu.title_bar and menu.title_bar.setSubTitle then
-        menu.title_bar:setSubTitle(buildStatusString())
+local function updateStatusBar(menu)
+    if not menu.title_bar then
+        return
+    end
+    local left, right = buildStatusStrings()
+    if menu.title_bar.setTitle then
+        menu.title_bar:setTitle(left)
+    end
+    if menu.title_bar.setSubTitle then
+        menu.title_bar:setSubTitle(right)
     end
 end
 
@@ -58,7 +65,7 @@ local function scheduleStatusRefresh(menu)
         UIManager:unschedule(menu._suwayomi_status_update)
     end
     menu._suwayomi_status_update = function()
-        updateStatusSubtitle(menu)
+        updateStatusBar(menu)
         scheduleStatusRefresh(menu)
     end
     UIManager:scheduleIn(60, menu._suwayomi_status_update)
@@ -129,14 +136,24 @@ end
 
 function SuwayomiHome.show(manga_list, onSelectCallback, options)
     options = options or {}
-    options.title = options.title or I18n.t("Suwayomi Library")
-    options.subtitle = buildStatusString()
+    local left, right = buildStatusStrings()
+    options.title = nil
     options.grid = options.grid ~= false
     options.item_table = ListRows.buildMangaMenuTable(manga_list or {}, {
         show_in_library = false,
         on_select = onSelectCallback,
     })
+    for _, item in ipairs(options.item_table) do
+        item.keep_menu_open = true
+    end
+    options.custom_title_bar = SuwayomiStatusBar:new{
+        left_text = left,
+        right_text = right,
+    }
     local menu = ListMenu.create(options)
+    if menu.title_bar then
+        menu.title_bar.show_parent = menu
+    end
     installGesturePassthrough(menu)
     UIManager:show(menu)
     scheduleStatusRefresh(menu)
