@@ -25,6 +25,7 @@ local TextWidget      = require("ui/widget/textwidget")
 
 local SuwayomiStatusBar = OverlapGroup:extend{
     name = "suwayomi_status_bar",
+    allow_mirroring = false,
 }
 
 function SuwayomiStatusBar:init()
@@ -53,6 +54,7 @@ function SuwayomiStatusBar:init()
         dimen = self.dimen:copy(),
         self.right_text_widget,
     }
+    OverlapGroup.init(self)
 end
 
 function SuwayomiStatusBar:refreshLeftGroup()
@@ -82,7 +84,16 @@ function SuwayomiStatusBar:refreshLeftGroup()
     }
 end
 
+function SuwayomiStatusBar:generateVerticalLayout()
+    -- Menu/FocusManager asks for title bar focus layout. We have no
+    -- focusable title bar elements, so return an empty layout.
+    return {}
+end
+
 function SuwayomiStatusBar:getHeight()
+    if self.dimen then
+        return self.dimen.h
+    end
     return self.titlebar_height
 end
 
