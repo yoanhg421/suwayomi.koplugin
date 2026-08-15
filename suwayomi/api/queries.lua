@@ -22,7 +22,7 @@ local EXTENSION_FIELDS = "pkgName name lang versionName versionCode isNsfw isIns
 local LEGACY_EXTENSION_FIELDS = "pkgName name lang versionName versionCode isNsfw isInstalled hasUpdate isObsolete"
 local LEGACY_MANGA_FIELDS = "id title inLibrary initialized thumbnailUrl"
 local LEGACY_REFRESH_MANGA_FIELDS = "id title initialized thumbnailUrl"
-local MANGA_FIELDS = "id title author artist description genre status inLibrary initialized thumbnailUrl"
+local MANGA_FIELDS = "id title author artist description genre status inLibrary initialized thumbnailUrl chaptersLastFetchedAt"
 local SAVED_SEARCHES_META_KEY = "webUI_savedSearches"
 local SOURCE_FILTER_FIELDS = table.concat({
     "__typename",

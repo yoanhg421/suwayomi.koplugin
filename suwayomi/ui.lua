@@ -54,6 +54,10 @@ SuwayomiUI.showLibraryCategoryMenu = BrowseUI.showLibraryCategoryMenu
 SuwayomiUI.showLibraryMangaMenu = BrowseUI.showLibraryMangaMenu
 SuwayomiUI.updateLibraryMangaMenu = BrowseUI.updateLibraryMangaMenu
 
+function SuwayomiUI.setMenuTitle(menu, title)
+    return getListMenu().setTitle(menu, title)
+end
+
 SuwayomiUI.buildDownloadsMenuTable = DownloadsUI.buildDownloadsMenuTable
 SuwayomiUI.showDownloadsMenu = DownloadsUI.showDownloadsMenu
 SuwayomiUI.updateDownloadsMenu = DownloadsUI.updateDownloadsMenu
@@ -143,6 +147,8 @@ function SuwayomiUI.showHomeDialog(options, onSelectCallback)
         local action = options.actions[action_index]
         table.insert(row, {
             text = action.text,
+            enabled = action.enabled,
+            enabled_func = action.enabled_func,
             callback = function()
                 if action.close_before_select ~= false then
                     UIManager:close(dialog)
@@ -715,6 +721,63 @@ function SuwayomiUI.showOnboardingConnectionDialog(options)
     UIManager:show(dialog)
     dialog:onShowKeyboard()
     return dialog
+end
+
+function SuwayomiUI.showSnack(text, options)
+    options = options or {}
+    local UIManager = require("ui/uimanager")
+    local Device = require("device")
+    local Screen = Device.screen
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Font = require("ui/font")
+    local Geom = require("ui/geometry")
+    local TextWidget = require("ui/widget/textwidget")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+
+    local text_widget = TextWidget:new{
+        text = tostring(text or ""),
+        face = Font:getFace("x_smallinfofont"),
+        fgcolor = Blitbuffer.COLOR_WHITE,
+    }
+    local padding = Screen:scaleBySize(4)
+    local height = text_widget:getSize().h + 2 * padding
+    local frame = FrameContainer:new{
+        width = Screen:getWidth(),
+        height = height,
+        padding = padding,
+        bordersize = 0,
+        background = Blitbuffer.COLOR_BLACK,
+        text_widget,
+    }
+    local y = Screen:getHeight() - height
+    local snack = InputContainer:new{
+        dimen = Geom:new{
+            x = 0,
+            y = y,
+            w = Screen:getWidth(),
+            h = height,
+        },
+        toast = true,
+        frame,
+    }
+    UIManager:show(snack, "ui")
+    if options.timeout then
+        UIManager:scheduleIn(options.timeout, function()
+            if snack then
+                UIManager:close(snack)
+            end
+        end)
+    end
+    return snack
+end
+
+function SuwayomiUI.closeSnack(snack)
+    if not snack then
+        return
+    end
+    local UIManager = require("ui/uimanager")
+    UIManager:close(snack)
 end
 
 return SuwayomiUI

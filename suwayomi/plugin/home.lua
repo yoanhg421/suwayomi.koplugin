@@ -9,6 +9,7 @@ local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
 local SuwayomiUI = require("suwayomi/ui")
 local I18n = require("suwayomi/i18n")
+local FullSync = require("suwayomi/offline/full_sync")
 
 local HomeController = {}
 HomeController.__index = HomeController
@@ -84,8 +85,21 @@ function Methods:buildHomeActions()
         {
             id = "sync",
             text = I18n.t("Sync"),
+            enabled = not FullSync:isRunning(),
             callback = function()
-                self:syncReadStateNow()
+                if FullSync:isRunning() then
+                    self:showMessage(I18n.t("A full sync is already in progress."))
+                    return
+                end
+                local snack = SuwayomiUI.showSnack(I18n.t("Syncing..."))
+                FullSync:start(nil, function(result)
+                    SuwayomiUI.closeSnack(snack)
+                    if result and result.ok then
+                        SuwayomiUI.showSnack(I18n.f("Sync complete. %1 manga updated.", tostring(result.synced or 0)), { timeout = 2 })
+                    else
+                        SuwayomiUI.showSnack(I18n.f("Sync failed: %1", result and result.error or I18n.t("unknown error")), { timeout = 3 })
+                    end
+                end)
             end,
         },
         {
@@ -146,10 +160,14 @@ end
 
 function Methods:showMessage(message, options)
     options = options or {}
-    UIManager:show(InfoMessage:new{
-        text = message,
-        timeout = options.timeout,
-    })
+    if SuwayomiUI and SuwayomiUI.showSnack then
+        SuwayomiUI.showSnack(message, { timeout = options.timeout })
+    else
+        UIManager:show(InfoMessage:new{
+            text = tostring(message or ""),
+            timeout = options.timeout,
+        })
+    end
 end
 
 

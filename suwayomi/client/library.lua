@@ -7,6 +7,9 @@
 
 local M = {}
 local I18n = require("suwayomi/i18n")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
+local SuwayomiOfflineSync = require("suwayomi/offline/sync")
+local FullSync = require("suwayomi/offline/full_sync")
 
 function M.install(SuwayomiClient)
 function SuwayomiClient:mangaBelongsToCategory(manga, category)
@@ -120,13 +123,15 @@ function SuwayomiClient:cancelLibraryNetworkRequests()
 end
 
 function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
-    if not result then
-        self.plugin:showMessage(I18n.t("Could not load Suwayomi library."))
-        return
-    end
-    if not result.ok then
-        self.plugin:showMessage(result.error or I18n.t("Could not load Suwayomi library."))
-        return
+    if not result or not result.ok then
+        local offline_manga = SuwayomiOfflineStore:getMangaList()
+        local manga = self:filterLibraryMangaByCategory(offline_manga, category)
+        if #manga > 0 then
+            result = { ok = true, manga = manga, total_count = #manga }
+        else
+            self.plugin:showMessage(result and result.error or I18n.t("Could not load Suwayomi library."))
+            return
+        end
     end
 
     local manga = self:filterLibraryMangaByCategory(result.manga or {}, category)
@@ -211,25 +216,69 @@ end
 
 function SuwayomiClient:showLibraryManga(category, credentials)
     credentials = credentials or self.settings:load()
+    local offline_manga = SuwayomiOfflineStore:getMangaList()
+    local showed_offline = false
+    if #offline_manga > 0 then
+        self:showLibraryMangaResult(category, credentials, {
+            ok = true,
+            manga = offline_manga,
+            total_count = #offline_manga,
+            from_offline = true,
+        })
+        showed_offline = true
+    end
+    if not credentials.server_url or credentials.server_url == "" then
+        if not showed_offline then
+            self:showLibraryMangaResult(category, credentials, nil)
+        end
+        return true
+    end
     local started, err = self:startLibraryNetworkRequest(credentials, {
         action = "fetch_library_manga_pages",
-    }, I18n.t("Loading library..."), function(result)
-        self:showLibraryMangaResult(category, credentials, result)
+    }, nil, function(result)
+        if result and result.ok and result.manga and #result.manga > 0 then
+            if not FullSync:isRunning() then
+                local sync_snack
+                if self.ui and self.ui.showSnack then
+                    sync_snack = self.ui.showSnack(I18n.t("Syncing..."))
+                end
+                FullSync:start(result.manga, function(sync_result)
+                    if self.ui and self.ui.closeSnack then
+                        self.ui.closeSnack(sync_snack)
+                    end
+                    if self.ui and self.ui.showSnack then
+                        if sync_result and sync_result.ok then
+                            self.ui.showSnack(I18n.f("Library sync complete. %1 manga updated.", tostring(sync_result.synced or 0)), { timeout = 2 })
+                        else
+                            self.ui.showSnack(I18n.f("Library sync failed: %1", sync_result and sync_result.error or I18n.t("unknown error")), { timeout = 3 })
+                        end
+                    end
+                end)
+            end
+        end
+        if not showed_offline then
+            self:showLibraryMangaResult(category, credentials, result)
+        end
     end)
-    if not started then
+    if not started and not showed_offline then
         self.plugin:showMessage(I18n.f("Could not start library loading: %1", err or I18n.t("unknown error")))
     end
-    return started
+    return started or showed_offline
 end
 
 function SuwayomiClient:showLibraryCategoriesResult(credentials, result)
-    if not result then
-        self.plugin:showMessage(I18n.t("Could not load Suwayomi library."))
-        return
+    if result and result.ok and not result.from_offline then
+        SuwayomiOfflineSync:syncCategories(result.categories)
     end
-    if not result.ok then
-        self.plugin:showMessage(result.error or I18n.t("Could not load library categories."))
-        return
+
+    if not result or not result.ok then
+        local offline_categories = SuwayomiOfflineStore:getCategories()
+        if #offline_categories > 0 then
+            result = { ok = true, categories = offline_categories }
+        else
+            self.plugin:showMessage(result and result.error or I18n.t("Could not load Suwayomi library."))
+            return
+        end
     end
 
     local categories = result.categories or {}
@@ -255,10 +304,26 @@ end
 function SuwayomiClient:showLibrary()
     return self:time("showLibrary", {}, function()
         local credentials = self.settings:load()
+        local offline_categories = SuwayomiOfflineStore:getCategories()
+        local showed_offline = false
+        if #offline_categories > 0 then
+            self:showLibraryCategoriesResult(credentials, {
+                ok = true,
+                categories = offline_categories,
+                from_offline = true,
+            })
+            showed_offline = true
+        end
         if not credentials.server_url or credentials.server_url == "" then
-            self.plugin:showMessage(I18n.t("Set up your Suwayomi server login first."))
-            if self.plugin.showOnboardingSetup then
-                self.plugin:showOnboardingSetup({ first_run = true })
+            if not showed_offline then
+                if SuwayomiOfflineStore:getLastSyncTime() > 0 then
+                    self:showLibraryCategoriesResult(credentials, nil)
+                    return
+                end
+                self.plugin:showMessage(I18n.t("Set up your Suwayomi server login first."))
+                if self.plugin.showOnboardingSetup then
+                    self.plugin:showOnboardingSetup({ first_run = true })
+                end
             end
             return
         end
@@ -268,13 +333,18 @@ function SuwayomiClient:showLibrary()
 
         local started, err = self:startLibraryNetworkRequest(credentials, {
             action = "fetch_library_categories",
-        }, I18n.t("Loading categories..."), function(result)
-            self:showLibraryCategoriesResult(credentials, result)
+        }, nil, function(result)
+            if result and result.ok and result.categories and #result.categories > 0 then
+                SuwayomiOfflineSync:syncCategories(result.categories)
+            end
+            if not showed_offline then
+                self:showLibraryCategoriesResult(credentials, result)
+            end
         end)
-        if not started then
+        if not started and not showed_offline then
             self.plugin:showMessage(I18n.f("Could not start library loading: %1", err or I18n.t("unknown error")))
         end
-        return started
+        return started or showed_offline
     end)
 end
 end

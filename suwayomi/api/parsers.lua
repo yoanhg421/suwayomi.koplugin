@@ -187,6 +187,9 @@ local function parseMangaNode(entry)
     if entry.initialized ~= nil then
         manga.initialized = entry.initialized == true
     end
+    if entry.chaptersLastFetchedAt ~= nil then
+        manga.chapters_last_fetched_at = tostring(entry.chaptersLastFetchedAt)
+    end
     if entry.thumbnailUrl ~= nil then
         manga.thumbnail_url = entry.thumbnailUrl
     end

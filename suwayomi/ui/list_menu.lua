@@ -1386,4 +1386,12 @@ function ListMenu.update(menu, options)
     end
 end
 
+function ListMenu.setTitle(menu, title)
+    if not menu then
+        return
+    end
+    menu.title = title or menu.title
+    menu_utils.applyTitleBarOptions(menu, { title = title })
+end
+
 return ListMenu

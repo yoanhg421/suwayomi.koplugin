@@ -10,6 +10,8 @@ local SuwayomiUI = require("suwayomi/ui")
 local SuwayomiDebug = require("suwayomi/debug")
 local NetworkRequestJob = require("suwayomi/network/request_job")
 local MangaActionMenu = require("suwayomi/manga/action_menu")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
+local SuwayomiOfflineSync = require("suwayomi/offline/sync")
 local I18n = require("suwayomi/i18n")
 
 local MangaController = {}
@@ -181,11 +183,14 @@ end
 
 function Methods:handleRefreshMangaResult(manga, result, options)
     options = options or {}
-    if not result then
-        return false
+    if not result or not result.ok then
+        local offline_chapters = SuwayomiOfflineStore:getChaptersList(manga and manga.id)
+        if offline_chapters and #offline_chapters > 0 then
+            result = { ok = true, chapters = offline_chapters }
+        end
     end
-    if not result.ok then
-        self:showMessage(result.error)
+    if not result or not result.ok then
+        self:showMessage(result and result.error or I18n.t("Could not load chapters."))
         return false
     end
     if type(result.chapters) ~= "table" then
@@ -205,11 +210,17 @@ function Methods:handleRefreshMangaResult(manga, result, options)
 end
 
 function Methods:handleChapterContextResult(manga, result, on_ready)
-    if not result then
-        return false
+    if result and result.ok and result.chapters then
+        SuwayomiOfflineSync:syncChapters(manga and manga.id, result)
     end
-    if not result.ok then
-        self:showMessage(result.error)
+    if not result or not result.ok then
+        local offline_chapters = SuwayomiOfflineStore:getChaptersList(manga and manga.id)
+        if offline_chapters and #offline_chapters > 0 then
+            result = { ok = true, chapters = offline_chapters }
+        end
+    end
+    if not result or not result.ok then
+        self:showMessage(result and result.error or I18n.t("Could not load chapters."))
         return false
     end
     if type(result.chapters) ~= "table" or #result.chapters == 0 then
@@ -248,6 +259,13 @@ function Methods:withMangaChapterContext(manga, on_ready, options)
         context = getLoadedMangaChapterContext(self, manga)
     else
         context = self:ensureMangaChapterContext(manga)
+    end
+    if not context and manga and manga.id then
+        local offline_chapters = SuwayomiOfflineStore:getChaptersList(manga.id)
+        if offline_chapters and #offline_chapters > 0 then
+            local chapters = self:mergeChaptersWithReadLedger(manga, offline_chapters)
+            context = self:setCurrentMangaChapterContext(manga, chapters)
+        end
     end
     if context then
         if on_ready then
@@ -312,11 +330,17 @@ end
 
 function Methods:showChapterResultForManga(manga, result, options)
     options = options or {}
-    if not result then
-        return
+    if result and result.ok and result.chapters then
+        SuwayomiOfflineSync:syncChapters(manga and manga.id, result)
     end
-    if not result.ok then
-        self:showMessage(result.error)
+    if not result or not result.ok then
+        local offline_chapters = SuwayomiOfflineStore:getChaptersList(manga and manga.id)
+        if offline_chapters and #offline_chapters > 0 then
+            result = { ok = true, chapters = offline_chapters }
+        end
+    end
+    if not result or not result.ok then
+        self:showMessage(result and result.error or I18n.t("Could not load chapters."))
         return
     end
 
@@ -377,6 +401,15 @@ function Methods:showChaptersForManga(manga)
     return SuwayomiDebug.time("showChaptersForManga", {
         manga_id = manga and manga.id,
     }, function()
+        local credentials = SuwayomiSettings:load()
+        if not credentials.server_url or credentials.server_url == "" then
+            local offline_chapters = SuwayomiOfflineStore:getChaptersList(manga and manga.id)
+            if offline_chapters and #offline_chapters > 0 then
+                return self:showChapterResultForManga(manga, { ok = true, chapters = offline_chapters })
+            end
+            self:showMessage(I18n.t("This manga has no chapters."))
+            return false
+        end
         if self:isMangaUninitialized(manga) then
             return self:startRefreshMangaForChapters(manga)
         end

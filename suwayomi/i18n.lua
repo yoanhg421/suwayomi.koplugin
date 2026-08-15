@@ -294,7 +294,11 @@ local function catalogContextText(context, msgid)
 end
 
 function I18n.t(msgid)
-    return catalogText(msgid)
+    local text = catalogText(msgid)
+    if text and tostring(text) ~= "" then
+        return text
+    end
+    return msgid
 end
 
 function I18n.f(msgid, ...)
@@ -302,7 +306,11 @@ function I18n.f(msgid, ...)
 end
 
 function I18n.c(context, msgid)
-    return catalogContextText(context, msgid)
+    local text = catalogContextText(context, msgid)
+    if text and tostring(text) ~= "" then
+        return text
+    end
+    return msgid
 end
 
 function I18n.cf(context, msgid, ...)
