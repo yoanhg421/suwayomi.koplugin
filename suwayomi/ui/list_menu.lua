@@ -1248,6 +1248,19 @@ function ListMenu.install(menu, options)
     menu._suwayomi_thumbnail_active = menu._suwayomi_thumbnail_active or {}
     menu._suwayomi_thumbnail_active_count = menu._suwayomi_thumbnail_active_count or 0
     menu._suwayomi_thumbnail_generation = menu._suwayomi_thumbnail_generation or 0
+    -- KOReader's Menu does not expose self.footer. Locate the BottomContainer
+    -- that wraps self.page_info so custom footers can be swapped in.
+    if not menu.footer then
+        local content = menu[1] and menu[1][1]
+        if content then
+            for _, child in ipairs(content) do
+                if child and child[1] == menu.page_info then
+                    menu.footer = child
+                    break
+                end
+            end
+        end
+    end
     if options and options.grid ~= nil then
         menu._suwayomi_grid_mode = options.grid == true
     end
@@ -1326,7 +1339,7 @@ local function applyOptions(menu, options)
         menu._suwayomi_last_notified_page = nil
     end
     menu._suwayomi_on_page_changed = on_page_changed
-    if options and options.footer_widget then
+    if options and options.footer_widget and menu.footer then
         menu._suwayomi_footer_widget = options.footer_widget
         menu.footer[1] = options.footer_widget
     end
