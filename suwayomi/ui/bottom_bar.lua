@@ -53,8 +53,4 @@ function SuwayomiBottomBar:init()
     }
 end
 
-function SuwayomiBottomBar:getSize()
-    return self.dimen
-end
-
 return SuwayomiBottomBar
