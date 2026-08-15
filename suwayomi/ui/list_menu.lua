@@ -1343,6 +1343,7 @@ function ListMenu.create(options)
         title = options.title,
         subtitle = subtitle,
         title_bar_left_icon = options.title_bar_left_icon,
+        custom_title_bar = options.custom_title_bar,
         item_table = options.item_table or {},
         items_per_page = options.items_per_page,
         itemnumber = options.itemnumber,
