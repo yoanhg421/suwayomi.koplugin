@@ -835,7 +835,9 @@ function ListMenu.recalculateDimenGrid(menu, no_recalculate_dimen)
         if not menu.no_title then
             others_height = others_height + menu.title_bar.dimen.h
         end
-        if menu.page_info then
+        if menu._suwayomi_footer_widget then
+            others_height = others_height + menu._suwayomi_footer_widget:getSize().h
+        elseif menu.page_info then
             others_height = others_height + menu.page_info:getSize().h
         end
     end
@@ -960,7 +962,9 @@ function ListMenu.recalculateDimen(menu, no_recalculate_dimen)
         if not menu.no_title then
             others_height = others_height + menu.title_bar.dimen.h
         end
-        if menu.page_info then
+        if menu._suwayomi_footer_widget then
+            others_height = others_height + menu._suwayomi_footer_widget:getSize().h
+        elseif menu.page_info then
             others_height = others_height + menu.page_info:getSize().h
         end
     end
@@ -1322,6 +1326,10 @@ local function applyOptions(menu, options)
         menu._suwayomi_last_notified_page = nil
     end
     menu._suwayomi_on_page_changed = on_page_changed
+    if options and options.footer_widget then
+        menu._suwayomi_footer_widget = options.footer_widget
+        menu.footer[1] = options.footer_widget
+    end
 end
 
 function ListMenu.create(options)
