@@ -162,7 +162,7 @@ function Methods:_extendMenuOrder()
         end
     end
     table.insert(order["KOMenu:menu_buttons"], 2, "suwayomi_tab")
-    order.suwayomi_tab = { "suwayomi" }
+    order.suwayomi_tab = {}
 end
 
 
@@ -340,12 +340,24 @@ function Methods:addToMainMenu(menu_items)
         return
     end
 
-    menu_items.suwayomi_tab = { icon = "book.opened" }
-    menu_items.suwayomi = {
-        text = I18n.t("Suwayomi"),
-        sorting_hint = "suwayomi_tab",
-        sub_item_table = self:buildHomeActions(),
-    }
+    menu_items.suwayomi_tab = { icon = "appbar.pokeball" }
+
+    local suwayomi_tab_order = {}
+    for _, action in ipairs(self:buildHomeActions()) do
+        local menu_id = "suwayomi_" .. action.id
+        table.insert(suwayomi_tab_order, menu_id)
+        menu_items[menu_id] = {
+            text = action.text,
+            sorting_hint = "suwayomi_tab",
+            enabled = action.enabled,
+            callback = action.callback,
+        }
+    end
+
+    local ok, order = pcall(require, "ui/elements/filemanager_menu_order")
+    if ok and order and type(order.suwayomi_tab) == "table" then
+        order.suwayomi_tab = suwayomi_tab_order
+    end
 end
 
 

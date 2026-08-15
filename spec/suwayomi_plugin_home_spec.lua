@@ -46,7 +46,7 @@ describe("suwayomi/plugin/home", function()
 
         local menu_items = {}
         plugin:addToMainMenu(menu_items)
-        menu_items.suwayomi.sub_item_table[1].callback()
+        menu_items.suwayomi_library.callback()
 
         assert.is_true(plugin.setup_options.first_run)
         assert.is_false(plugin.library_shown)

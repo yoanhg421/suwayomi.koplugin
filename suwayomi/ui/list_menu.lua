@@ -1366,6 +1366,7 @@ function ListMenu.show(options)
     applyOptions(menu, options)
     menu._suwayomi_pending_itemnumber = options.itemnumber
     menu:updateItems()
+    menu.covers_fullscreen = false
     UIManager:show(menu)
     return menu
 end
