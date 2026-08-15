@@ -715,6 +715,9 @@ function SuwayomiUI.showOnboardingConnectionDialog(options)
 end
 
 function SuwayomiUI.showSnack(text, options)
+    if not text or tostring(text) == "" then
+        return nil
+    end
     options = options or {}
     local UIManager = require("ui/uimanager")
     local Device = require("device")

@@ -279,6 +279,9 @@ end
 
 
 function Methods:withLoadingMessage(key, message, callback)
+    if not message or tostring(message) == "" then
+        return nil
+    end
     self.loading_operations = self.loading_operations or {}
     if self.loading_operations[key] then
         return nil
@@ -310,6 +313,9 @@ end
 
 
 function Methods:showLoadingMessage(message)
+    if not message or tostring(message) == "" then
+        return nil
+    end
     local loading_message = InfoMessage:new{
         text = message,
         suwayomi_loading = true,

@@ -22,6 +22,9 @@ local function closeLoading(owner, loading_message)
 end
 
 local function showLoading(owner, message)
+    if not message or tostring(message) == "" then
+        return nil
+    end
     if owner and owner.showLoadingMessage then
         return owner:showLoadingMessage(message)
     end
