@@ -53,35 +53,31 @@ describe("suwayomi plugin", function()
         assert.are.equal(plugin, runtime.registered_menu_plugin)
     end)
 
-    it("adds the plugin to the main menu and opens the Suwayomi home screen", function()
+    it("adds the plugin as a top tab with the Suwayomi actions", function()
         local menu_items = {}
         local plugin = build_plugin()
 
         plugin:addToMainMenu(menu_items)
 
+        assert.is_table(menu_items.suwayomi_tab)
+        assert.are.equal("book.opened", menu_items.suwayomi_tab.icon)
         assert.is_table(menu_items.suwayomi)
         assert.are.equal("Suwayomi", menu_items.suwayomi.text)
-        assert.are.equal("main", menu_items.suwayomi.sorting_hint)
-        assert.is_function(menu_items.suwayomi.callback)
-        assert.is_nil(menu_items.suwayomi.sub_item_table)
-
-        menu_items.suwayomi.callback()
-
-        assert.is_table(runtime.shown_home_dialog)
-        assert.is_nil(runtime.shown_library_calls)
+        assert.are.equal("suwayomi_tab", menu_items.suwayomi.sorting_hint)
+        assert.is_table(menu_items.suwayomi.sub_item_table)
+        assert.is_nil(menu_items.suwayomi.callback)
+        assert.are.equal("Library", menu_items.suwayomi.sub_item_table[1].text)
+        assert.is_function(menu_items.suwayomi.sub_item_table[1].callback)
     end)
 
-    it("closes the launching KOReader menu before opening the Suwayomi home screen", function()
+    it("opens the Library from the Suwayomi tab", function()
         local menu_items = {}
         local plugin = build_plugin()
-        local parent_menu = { name = "main-menu" }
 
         plugin:addToMainMenu(menu_items)
-        menu_items.suwayomi.callback(parent_menu)
+        menu_items.suwayomi.sub_item_table[1].callback()
 
-        assert.are.same({ parent_menu }, runtime.closed_widgets)
-        assert.is_table(runtime.shown_home_dialog)
-        assert.is_nil(runtime.shown_library_calls)
+        assert.are.equal(1, runtime.shown_library_calls)
     end)
 
     it("adds only the reader return action in book mode when the document is from Suwayomi", function()

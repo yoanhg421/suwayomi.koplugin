@@ -213,8 +213,21 @@ function SuwayomiPlugin:init()
     self.selected_chapters = self.selected_chapters or {}
     self.selection_mode = self.selection_mode == true
     self:getDownloadQueue():recover()
+    self:_extendMenuOrder()
+    self:_registerStartWithMenu()
     if self.ui and self.ui.menu then
         self.ui.menu:registerToMainMenu(self)
+    end
+    if _G.G_reader_settings
+            and _G.G_reader_settings:readSetting("start_with") == "suwayomi"
+            and not self:isBookMode() then
+        UIManager:nextTick(function()
+            if self.needsOnboardingSetup and self:needsOnboardingSetup() then
+                self:showOnboardingSetup({ first_run = true })
+            elseif not self:_isSuwayomiShowing() then
+                self:showLibrary()
+            end
+        end)
     end
     SuwayomiDebug.log({ operation = "plugin_init", event = "end" })
 end

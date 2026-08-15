@@ -59,6 +59,10 @@ function Methods:buildHomeActions()
             id = "library",
             text = I18n.t("Library"),
             callback = function()
+                if self.needsOnboardingSetup and self:needsOnboardingSetup() then
+                    self:showOnboardingSetup({ first_run = true })
+                    return
+                end
                 return self:showTopLevelScreen("library", function()
                     return self:showLibrary()
                 end)
@@ -143,6 +147,104 @@ function Methods:showHome()
         self:trackSuwayomiScreen("home", dialog)
     end
     return dialog
+end
+
+
+function Methods:_extendMenuOrder()
+    local ok, order = pcall(require, "ui/elements/filemanager_menu_order")
+    if not ok or type(order) ~= "table"
+            or type(order["KOMenu:menu_buttons"]) ~= "table" then
+        return
+    end
+    for _, id in ipairs(order["KOMenu:menu_buttons"]) do
+        if id == "suwayomi_tab" then
+            return
+        end
+    end
+    table.insert(order["KOMenu:menu_buttons"], 2, "suwayomi_tab")
+    order.suwayomi_tab = { "suwayomi" }
+end
+
+
+function Methods:_registerStartWithMenu()
+    local plugin = self
+    local ok, FMMenu = pcall(require, "apps/filemanager/filemanagermenu")
+    if not ok or not FMMenu then
+        return
+    end
+    local orig_fn = FMMenu.getStartWithMenuTable
+    if type(orig_fn) ~= "function" then
+        return
+    end
+    if FMMenu._suwayomi_patched then
+        return
+    end
+    FMMenu._suwayomi_patched = true
+
+    FMMenu.getStartWithMenuTable = function(self_fm)
+        local result = orig_fn(self_fm)
+        if type(result) ~= "table" or type(result.sub_item_table) ~= "table" then
+            return result
+        end
+
+        local already
+        for _, entry in ipairs(result.sub_item_table) do
+            if entry.text == I18n.t("Suwayomi") then
+                already = true
+                break
+            end
+        end
+        if not already then
+            table.insert(result.sub_item_table, {
+                text = I18n.t("Suwayomi"),
+                radio = true,
+                checked_func = function()
+                    return _G.G_reader_settings
+                            and _G.G_reader_settings:readSetting("start_with") == "suwayomi"
+                end,
+                callback = function()
+                    if _G.G_reader_settings then
+                        _G.G_reader_settings:saveSetting("start_with", "suwayomi")
+                        _G.G_reader_settings:flush()
+                    end
+                    if plugin._isSuwayomiShowing and not plugin:_isSuwayomiShowing() then
+                        if plugin.needsOnboardingSetup and plugin:needsOnboardingSetup() then
+                            plugin:showOnboardingSetup({ first_run = true })
+                        else
+                            plugin:showLibrary()
+                        end
+                    end
+                end,
+            })
+        end
+
+        local orig_text_func = result.text_func
+        result.text_func = function()
+            if _G.G_reader_settings
+                    and _G.G_reader_settings:readSetting("start_with") == "suwayomi" then
+                return I18n.f("Start with: %1", I18n.t("Suwayomi"))
+            end
+            return orig_text_func and orig_text_func() or ""
+        end
+        return result
+    end
+end
+
+
+function Methods:_isSuwayomiShowing()
+    if not self.suwayomi_home_menu then
+        return false
+    end
+    local stack = UIManager._window_stack
+    if type(stack) ~= "table" then
+        return false
+    end
+    for _, win in ipairs(stack) do
+        if win.widget == self.suwayomi_home_menu then
+            return true
+        end
+    end
+    return false
 end
 
 
@@ -238,17 +340,11 @@ function Methods:addToMainMenu(menu_items)
         return
     end
 
+    menu_items.suwayomi_tab = { icon = "book.opened" }
     menu_items.suwayomi = {
         text = I18n.t("Suwayomi"),
-        sorting_hint = "main",
-        callback = function(menu)
-            self:closeMenu(menu)
-            if self.needsOnboardingSetup and self:needsOnboardingSetup() then
-                self:showOnboardingSetup({ first_run = true })
-                return
-            end
-            self:showHome()
-        end,
+        sorting_hint = "suwayomi_tab",
+        sub_item_table = self:buildHomeActions(),
     }
 end
 

@@ -77,6 +77,15 @@ function Helper.install(options)
     Helper.clearModules()
     Helper.clearPreloads()
 
+    Helper._saved_g_reader_settings = _G.G_reader_settings
+    _G.G_reader_settings = {
+        readSetting = function(_, key)
+            return options.settings and options.settings[key]
+        end,
+        saveSetting = function() end,
+        flush = function() end,
+    }
+
     local state = {
         registered_actions = {},
         registered_menu_plugin = nil,
@@ -334,6 +343,8 @@ function Helper.install(options)
 end
 
 function Helper.teardown()
+    _G.G_reader_settings = Helper._saved_g_reader_settings
+    Helper._saved_g_reader_settings = nil
     Helper.clearModules()
     Helper.clearPreloads()
 end
