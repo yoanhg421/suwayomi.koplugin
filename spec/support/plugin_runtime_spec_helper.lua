@@ -248,6 +248,8 @@ function Helper.install(options)
                 state.shown_home_dialog = dialog_options
                 return dialog_options
             end,
+            showSnack = function() end,
+            closeSnack = function() end,
         }
     end
 

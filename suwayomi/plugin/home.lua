@@ -262,8 +262,9 @@ end
 
 function Methods:showMessage(message, options)
     options = options or {}
+    options.timeout = options.timeout or 2
     if SuwayomiUI and SuwayomiUI.showSnack then
-        SuwayomiUI.showSnack(message, { timeout = options.timeout })
+        SuwayomiUI.showSnack(message, options)
     else
         UIManager:show(InfoMessage:new{
             text = tostring(message or ""),
