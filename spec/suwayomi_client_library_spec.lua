@@ -190,7 +190,7 @@ describe("suwayomi/client library flows", function()
                 end,
                 showSuwayomiHome = function(manga, onSelect)
                     onSelect(manga[1])
-                    return { _suwayomi_menu = { name = "library-menu" } }
+                    return { name = "library-menu" }
                 end,
                 updateLibraryMangaMenu = function(menu, manga)
                     updated_menu = menu
@@ -241,7 +241,7 @@ describe("suwayomi/client library flows", function()
                 end,
                 showSuwayomiHome = function(manga, onSelect)
                     onSelect(manga[1])
-                    return { _suwayomi_menu = { name = "library-menu" } }
+                    return { name = "library-menu" }
                 end,
                 updateLibraryMangaMenu = function(_, manga)
                     updated_manga = manga
