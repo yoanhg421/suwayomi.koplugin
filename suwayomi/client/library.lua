@@ -143,15 +143,6 @@ function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
         total_count = result.total_count,
     })
 
-    if #manga == 0 then
-        if category and category.id then
-            self.plugin:showMessage(I18n.t("No manga in this library category."))
-        else
-            self.plugin:showMessage(I18n.t("Your Suwayomi library is empty."))
-        end
-        return
-    end
-
     local library_manga = manga
     local hub_actions = {}
     if self.plugin.buildHomeActions then

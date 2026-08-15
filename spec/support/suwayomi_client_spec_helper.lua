@@ -1,9 +1,42 @@
 local M = {}
 
+if not package.preload.datastorage then
+    package.preload.datastorage = function()
+        return {
+            getSettingsDir = function()
+                return "/settings"
+            end,
+        }
+    end
+end
+
+if not package.preload.luasettings then
+    package.preload.luasettings = function()
+        return {
+            open = function()
+                return {
+                    readSetting = function(_, _, default)
+                        return default
+                    end,
+                    saveSetting = function(self)
+                        return self
+                    end,
+                    flush = function() end,
+                }
+            end,
+        }
+    end
+end
+
 local buildImmediateSourceMangaRuntime
 local buildImmediateNetworkRequestJob
 
 local function newClient(options)
+    package.loaded["suwayomi/client"] = nil
+    package.loaded["suwayomi/client/library"] = nil
+    package.loaded["suwayomi/offline/store"] = nil
+    package.loaded["luasettings"] = nil
+    package.loaded["datastorage"] = nil
     local Client = require("suwayomi/client")
     options = options or {}
     if not options.disable_source_manga_runtime

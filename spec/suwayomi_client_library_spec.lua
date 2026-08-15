@@ -11,7 +11,8 @@ describe("suwayomi/client library flows", function()
 
     local newClient = helper.newClient
 
-    it("shows an empty library message", function()
+    it("shows an empty library menu without a message", function()
+        local shown_manga_menu
         local client, state = newClient({
             api = {
                 fetchCategories = function()
@@ -25,8 +26,8 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function()
-                    error("unexpected manga menu")
+                showLibraryMangaMenu = function(manga)
+                    shown_manga_menu = manga
                 end,
             },
         })
@@ -38,7 +39,8 @@ describe("suwayomi/client library flows", function()
             state.network_requests[1].request.action,
             state.network_requests[2].request.action,
         })
-        assert.are.equal("Your Suwayomi library is empty.", state.shown_messages[#state.shown_messages])
+        assert.are.same({}, shown_manga_menu)
+        assert.are.same({}, state.shown_messages)
         assert.are.equal("https://suwayomi.example", state.scheduled_sync_credentials().server_url)
     end)
 
@@ -489,7 +491,8 @@ describe("suwayomi/client library flows", function()
         assert.is_nil(shown_manga[1].menu_text)
     end)
 
-    it("shows a selected-category empty message", function()
+    it("shows a selected-category empty menu without a message", function()
+        local shown_manga_menu
         local client, state = newClient({
             api = {
                 fetchCategories = function()
@@ -518,22 +521,46 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function(categories, onSelect)
                     onSelect(categories[3])
                 end,
-                showLibraryMangaMenu = function()
-                    error("unexpected manga menu")
+                showLibraryMangaMenu = function(manga)
+                    shown_manga_menu = manga
                 end,
             },
         })
 
         client:showLibrary()
 
-        assert.are.equal("No manga in this library category.", state.shown_messages[#state.shown_messages])
+        assert.are.same({}, shown_manga_menu)
+        assert.are.same({}, state.shown_messages)
     end)
 
     it("translates library fallback messages but keeps raw API errors", function()
         Marker.install()
+        package.loaded["suwayomi/client"] = nil
         package.loaded["suwayomi/client/library"] = nil
+        package.loaded["suwayomi/offline/store"] = nil
+        package.loaded["luasettings"] = nil
+        package.loaded["datastorage"] = nil
         package.loaded["suwayomi/i18n"] = nil
 
+        local original_offline_preload = package.preload["suwayomi/offline/store"]
+        package.preload["suwayomi/offline/store"] = function()
+            local M = {}
+            function M:reset() end
+            function M:open() return M end
+            function M:readSetting(_, _, default) return default end
+            function M:saveSetting() return self end
+            function M:flush() end
+            function M:getCategories() return {} end
+            function M:getMangaList() return {} end
+            function M:getMangaMap() return {} end
+            function M:getLastSyncTime() return 0 end
+            function M:setCategories() end
+            function M:setMangaMap() end
+            function M:setLastSyncTime() end
+            return M
+        end
+
+        local shown_manga_menu
         local client, state = newClient({
             api = {
                 fetchCategories = function()
@@ -547,8 +574,8 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function()
-                    error("unexpected manga menu")
+                showLibraryMangaMenu = function(manga)
+                    shown_manga_menu = manga
                 end,
             },
         })
@@ -560,10 +587,13 @@ describe("suwayomi/client library flows", function()
         assert.are.equal("HTTP 503 category API", state.shown_messages[#state.shown_messages])
 
         client:showLibraryMangaResult({ id = "reading", name = "Reading" }, {}, { ok = true, manga = {} })
-        assert.are.equal("tx:No manga in this library category.", state.shown_messages[#state.shown_messages])
+        assert.are.same({}, shown_manga_menu)
+        assert.are.equal("HTTP 503 category API", state.shown_messages[#state.shown_messages])
 
         client:showLibraryCategoriesResult({}, nil)
         assert.are.equal("tx:Could not load Suwayomi library.", state.shown_messages[#state.shown_messages])
+
+        package.preload["suwayomi/offline/store"] = original_offline_preload
     end)
 
     it("uses action-aware timeout feedback for library loads", function()

@@ -261,13 +261,17 @@ end
 
 
 function Methods:showMessage(message, options)
+    local message_str = tostring(message or "")
+    if message_str == "" then
+        return
+    end
     options = options or {}
     options.timeout = options.timeout or 2
     if SuwayomiUI and SuwayomiUI.showSnack then
-        SuwayomiUI.showSnack(message, options)
+        SuwayomiUI.showSnack(message_str, options)
     else
         UIManager:show(InfoMessage:new{
-            text = tostring(message or ""),
+            text = message_str,
             timeout = options.timeout,
         })
     end
