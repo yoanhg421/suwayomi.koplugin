@@ -1324,7 +1324,7 @@ local function applyOptions(menu, options)
     menu._suwayomi_on_page_changed = on_page_changed
 end
 
-function ListMenu.show(options)
+function ListMenu.create(options)
     options = options or {}
     local items_max_lines = options.items_max_lines
     if items_max_lines == nil then
@@ -1367,6 +1367,11 @@ function ListMenu.show(options)
     menu._suwayomi_pending_itemnumber = options.itemnumber
     menu:updateItems()
     menu.covers_fullscreen = false
+    return menu
+end
+
+function ListMenu.show(options)
+    local menu = ListMenu.create(options)
     UIManager:show(menu)
     return menu
 end

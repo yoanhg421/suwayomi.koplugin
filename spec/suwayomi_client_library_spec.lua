@@ -26,7 +26,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga_menu = manga
                 end,
             },
@@ -93,7 +93,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function(manga, onSelect, menu_options)
+                showSuwayomiHome = function(manga, onSelect, menu_options)
                     shown_manga = manga
                     shown_menu_options = menu_options
                     onSelect(manga[1])
@@ -135,7 +135,7 @@ describe("suwayomi/client library flows", function()
                 end,
             },
             ui = {
-                showLibraryMangaMenu = function()
+                showSuwayomiHome = function()
                     return { name = "library-menu" }
                 end,
             },
@@ -188,9 +188,9 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function(manga, onSelect)
+                showSuwayomiHome = function(manga, onSelect)
                     onSelect(manga[1])
-                    return { name = "library-menu" }
+                    return { _suwayomi_menu = { name = "library-menu" } }
                 end,
                 updateLibraryMangaMenu = function(menu, manga)
                     updated_menu = menu
@@ -239,9 +239,9 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function(manga, onSelect)
+                showSuwayomiHome = function(manga, onSelect)
                     onSelect(manga[1])
-                    return { name = "library-menu" }
+                    return { _suwayomi_menu = { name = "library-menu" } }
                 end,
                 updateLibraryMangaMenu = function(_, manga)
                     updated_manga = manga
@@ -300,7 +300,7 @@ describe("suwayomi/client library flows", function()
                     shown_category_menu_options = menu_options
                     onSelect(categories[3])
                 end,
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga = manga
                 end,
             },
@@ -347,7 +347,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function(categories)
                     shown_categories = categories
                 end,
-                showLibraryMangaMenu = function()
+                showSuwayomiHome = function()
                     error("unexpected manga menu")
                 end,
             },
@@ -384,7 +384,7 @@ describe("suwayomi/client library flows", function()
                     shown_categories = categories
                     onSelect(categories[2])
                 end,
-                showLibraryMangaMenu = function() end,
+                showSuwayomiHome = function() end,
             },
         })
 
@@ -422,7 +422,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga = manga
                 end,
             },
@@ -478,7 +478,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function(categories, onSelect)
                     onSelect(categories[3])
                 end,
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga = manga
                 end,
             },
@@ -521,7 +521,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function(categories, onSelect)
                     onSelect(categories[3])
                 end,
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga_menu = manga
                 end,
             },
@@ -574,7 +574,7 @@ describe("suwayomi/client library flows", function()
                 showLibraryCategoryMenu = function()
                     error("unexpected category menu")
                 end,
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga_menu = manga
                 end,
             },
@@ -683,7 +683,7 @@ describe("suwayomi/client library flows", function()
                 end,
             },
             ui = {
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga = manga
                     return { name = "library-menu" }
                 end,
@@ -733,7 +733,7 @@ describe("suwayomi/client library flows", function()
                 end,
             },
             ui = {
-                showLibraryMangaMenu = function(manga)
+                showSuwayomiHome = function(manga)
                     shown_manga = manga
                     return { name = "library-menu" }
                 end,

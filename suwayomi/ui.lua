@@ -54,6 +54,10 @@ SuwayomiUI.showLibraryCategoryMenu = BrowseUI.showLibraryCategoryMenu
 SuwayomiUI.showLibraryMangaMenu = BrowseUI.showLibraryMangaMenu
 SuwayomiUI.updateLibraryMangaMenu = BrowseUI.updateLibraryMangaMenu
 
+function SuwayomiUI.showSuwayomiHome(manga_list, onSelectCallback, options)
+    return require("suwayomi/ui/home").show(manga_list, onSelectCallback, options)
+end
+
 function SuwayomiUI.setMenuTitle(menu, title)
     return getListMenu().setTitle(menu, title)
 end

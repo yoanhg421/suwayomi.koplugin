@@ -173,12 +173,12 @@ function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
                 table.remove(library_manga, index)
             end
         end
-        if not library_menu then
+        if not library_menu or not library_menu._suwayomi_menu then
             pending_library_menu_refresh = true
             return
         end
         if self.ui.updateLibraryMangaMenu then
-            self.ui.updateLibraryMangaMenu(library_menu, library_manga, function(selected_manga)
+            self.ui.updateLibraryMangaMenu(library_menu._suwayomi_menu, library_manga, function(selected_manga)
                 if self.plugin.showMangaActions then
                     self.plugin:showMangaActions(selected_manga, {
                         onMangaUpdated = refreshLibraryMangaMenu,
@@ -190,7 +190,7 @@ function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
         end
     end
 
-    library_menu = self.ui.showLibraryMangaMenu(library_manga, function(selected_manga)
+    library_menu = self.ui.showSuwayomiHome(library_manga, function(selected_manga)
         if self.plugin.showMangaActions then
             self.plugin:showMangaActions(selected_manga, {
                 onMangaUpdated = refreshLibraryMangaMenu,
