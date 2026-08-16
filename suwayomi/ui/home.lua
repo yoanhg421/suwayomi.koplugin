@@ -21,14 +21,6 @@ local SuwayomiHomeWidget = require("suwayomi/ui/home_widget")
 
 local SuwayomiHome = {}
 
-local function pluginIconDir()
-    local ok, path = pcall(package.searchpath, "suwayomi/ui/home", package.path)
-    if ok and path then
-        return path:gsub("suwayomi/ui/home%.lua$", "suwayomi/icons/")
-    end
-    return "suwayomi/icons/"
-end
-
 local function buildStatusStrings()
     local left_parts = {}
     local right_parts = {}
@@ -208,10 +200,10 @@ end
 
 local function defaultBottomActions(home_ref)
     return {
-        { text = "Library",   icon = "book.svg", action = function() home_ref.home:showTab("library") end },
-        { text = "Recent",    icon = "clock-counter-clockwise.svg", action = function() home_ref.home:showTab("recent") end },
-        { text = "Updates",   icon = "arrows-clockwise.svg", action = function() home_ref.home:showTab("updates") end },
-        { text = "Downloads", icon = "download.svg", action = function() home_ref.home:showTab("downloads") end },
+        { text = "Library",   icon = "book.opened.svg", action = function() home_ref.home:showTab("library") end },
+        { text = "Recent",    icon = "rotation.90CCW.svg", action = function() home_ref.home:showTab("recent") end },
+        { text = "Updates",   icon = "cre.render.reload.svg", action = function() home_ref.home:showTab("updates") end },
+        { text = "Downloads", icon = "move.down.svg", action = function() home_ref.home:showTab("downloads") end },
     }
 end
 
@@ -236,7 +228,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     options = options or {}
     local home_ref = { home = nil }
     local bottom_actions = options.bottom_actions or defaultBottomActions(home_ref)
-    local icon_dir = options.icon_dir or pluginIconDir()
+    local icon_dir = options.icon_dir or "resources/icons/mdlight/"
     local bottom_bar = SuwayomiBottomBar:new{
         buttons = bottom_actions,
         icon_dir = icon_dir,
