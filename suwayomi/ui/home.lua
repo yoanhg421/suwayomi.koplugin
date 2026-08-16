@@ -88,7 +88,6 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, 
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = left,
             right_text = right,
-            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
         thumbnail_credentials = options.thumbnail_credentials,
@@ -117,7 +116,6 @@ local function buildDownloadsMenu(bottom_bar, home, snapshot)
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = "Downloads",
             right_text = " ",
-            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
     }
@@ -139,7 +137,6 @@ local function buildRecentMenu(bottom_bar, home)
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = "Recent",
             right_text = " ",
-            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
     }
@@ -161,7 +158,6 @@ local function buildUpdatesMenu(bottom_bar, home)
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = "Updates",
             right_text = " ",
-            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
     }
@@ -210,19 +206,10 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     local home = SuwayomiHomeWidget:new{ menu = nil }
     home_ref.home = home
     home._suwayomi_bottom_bar = bottom_bar
-    home._suwayomi_title_bar_left_icon = options.title_bar_left_icon
-    home._suwayomi_on_title_bar_left_tap = options.on_title_bar_left_tap
     home._suwayomi_get_downloads_snapshot = options.getDownloadsSnapshot
     home._suwayomi_downloads_callbacks = options.downloads_callbacks
     home._suwayomi_download_directory_summary = options.download_directory_summary
     home.tabs = {}
-
-    home.onLeftButtonTap = function()
-        if home._suwayomi_on_title_bar_left_tap and home.menu then
-            return home._suwayomi_on_title_bar_left_tap(home.menu)
-        end
-        return false
-    end
 
     local library_menu = buildLibraryMenu(
         manga_list,
