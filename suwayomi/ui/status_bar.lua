@@ -69,6 +69,7 @@ function SuwayomiStatusBar:refreshLeftGroup()
             allow_flash = false,
             show_parent = self,
         }
+        self.left_button = icon
         icon.callback = function()
             if self.show_parent and self.show_parent.onLeftButtonTap then
                 self.show_parent:onLeftButtonTap()

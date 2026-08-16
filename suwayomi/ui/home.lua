@@ -1,7 +1,7 @@
 -- Boundary: Suwayomi home screen presentation.
 --
 -- Responsibility: build and show the full-screen Suwayomi home widget with a
--- tabbed bottom bar (Library, Downloads, Settings, Close) where each tab
+-- tabbed bottom bar (Library, Recent, Updates, Downloads) where each tab
 -- renders its own ListMenu inside the home container.
 -- Owned state: status refresh scheduling and the per-tab menu cache.
 -- Dependencies: ListMenu, ListRows, DownloadsUI, SuwayomiStatusBar,
@@ -88,6 +88,7 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, 
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = left,
             right_text = right,
+            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
         thumbnail_credentials = options.thumbnail_credentials,
@@ -116,6 +117,7 @@ local function buildDownloadsMenu(bottom_bar, home, snapshot)
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = "Downloads",
             right_text = " ",
+            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
     }
@@ -127,19 +129,39 @@ local function buildDownloadsMenu(bottom_bar, home, snapshot)
     return menu
 end
 
-local function buildSettingsMenu(bottom_bar, home)
+local function buildRecentMenu(bottom_bar, home)
     local menu_options = {
         title = nil,
         grid = false,
         item_table = {
-            {
-                text = "Settings screen is not yet wired",
-                select_enabled = false,
-            },
+            { text = "Recent not yet wired", select_enabled = false },
         },
         custom_title_bar = SuwayomiStatusBar:new{
-            left_text = "Settings",
+            left_text = "Recent",
             right_text = " ",
+            left_icon = home._suwayomi_title_bar_left_icon,
+        },
+        footer_widget = bottom_bar,
+    }
+    local menu = ListMenu.create(menu_options)
+    if menu.title_bar then
+        menu.title_bar.show_parent = home
+    end
+    menu.show_parent = home
+    return menu
+end
+
+local function buildUpdatesMenu(bottom_bar, home)
+    local menu_options = {
+        title = nil,
+        grid = false,
+        item_table = {
+            { text = "Updates not yet wired", select_enabled = false },
+        },
+        custom_title_bar = SuwayomiStatusBar:new{
+            left_text = "Updates",
+            right_text = " ",
+            left_icon = home._suwayomi_title_bar_left_icon,
         },
         footer_widget = bottom_bar,
     }
@@ -153,10 +175,10 @@ end
 
 local function defaultBottomActions(home_ref)
     return {
-        { text = "Library",   action = function() home_ref.home:showTab("library") end },
+        { text = "Library",  action = function() home_ref.home:showTab("library") end },
+        { text = "Recent",   action = function() home_ref.home:showTab("recent") end },
+        { text = "Updates",  action = function() home_ref.home:showTab("updates") end },
         { text = "Downloads", action = function() home_ref.home:showTab("downloads") end },
-        { text = "Settings",  action = function() home_ref.home:showTab("settings") end },
-        { text = "Close",     action = function() UIManager:close(home_ref.home) end },
     }
 end
 
@@ -188,10 +210,19 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     local home = SuwayomiHomeWidget:new{ menu = nil }
     home_ref.home = home
     home._suwayomi_bottom_bar = bottom_bar
+    home._suwayomi_title_bar_left_icon = options.title_bar_left_icon
+    home._suwayomi_on_title_bar_left_tap = options.on_title_bar_left_tap
     home._suwayomi_get_downloads_snapshot = options.getDownloadsSnapshot
     home._suwayomi_downloads_callbacks = options.downloads_callbacks
     home._suwayomi_download_directory_summary = options.download_directory_summary
     home.tabs = {}
+
+    home.onLeftButtonTap = function()
+        if home._suwayomi_on_title_bar_left_tap and home.menu then
+            return home._suwayomi_on_title_bar_left_tap(home.menu)
+        end
+        return false
+    end
 
     local library_menu = buildLibraryMenu(
         manga_list,
@@ -220,9 +251,12 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
                 or {}
             menu = buildDownloadsMenu(self._suwayomi_bottom_bar, self, snapshot)
             self.tabs.downloads = menu
-        elseif tab_id == "settings" then
-            menu = self.tabs.settings or buildSettingsMenu(self._suwayomi_bottom_bar, self)
-            self.tabs.settings = menu
+        elseif tab_id == "recent" then
+            menu = self.tabs.recent or buildRecentMenu(self._suwayomi_bottom_bar, self)
+            self.tabs.recent = menu
+        elseif tab_id == "updates" then
+            menu = self.tabs.updates or buildUpdatesMenu(self._suwayomi_bottom_bar, self)
+            self.tabs.updates = menu
         end
 
         if not menu then
