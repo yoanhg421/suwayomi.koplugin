@@ -3,8 +3,9 @@
 -- Responsibility: render a row of filled/unfilled dots that show the current
 -- page number inside a paged grid.
 -- Owned state: dot widgets.
--- Dependencies: HorizontalGroup, TextWidget, UIManager, Font and Size.
+-- Dependencies: HorizontalGroup, TextWidget, UIManager, Font, Blitbuffer.
 
+local Blitbuffer = require("ffi/blitbuffer")
 local Font = require("ui/font")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan = require("ui/widget/horizontalspan")
@@ -19,8 +20,7 @@ local ACTIVE_DOT = "\u{25CF}"
 local INACTIVE_DOT = "\u{25CB}"
 
 function SuwayomiPageIndicator:init()
-    self.face = self.face or Font:getFace("xx_smallinfofont")
-    self.dots = {}
+    self.face = self.face or Font:getFace("xx_smallinfofont", 10)
     self:clear()
     self:setActive(self.page or 1, self.total or 1)
 end
@@ -45,10 +45,12 @@ function SuwayomiPageIndicator:setActive(page, total)
         table.insert(self, TextWidget:new{
             text = (i == page) and ACTIVE_DOT or INACTIVE_DOT,
             face = self.face,
+            fgcolor = (i == page) and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_GRAY,
         })
-        table.insert(self, HorizontalSpan:new{ width = 8 })
+        if i < total then
+            table.insert(self, HorizontalSpan:new{ width = 4 })
+        end
     end
-    table.remove(self)
     self:resetLayout()
     UIManager:setDirty(self.show_parent or self, "ui")
 end

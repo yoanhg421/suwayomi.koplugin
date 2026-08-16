@@ -555,6 +555,7 @@ function GridMenuItem:buildCoverImage(width, height)
         margin = 0,
         padding = 0,
         bordersize = border,
+        radius = scaled(8),
         image,
     }
 end
