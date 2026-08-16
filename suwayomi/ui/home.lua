@@ -21,6 +21,14 @@ local SuwayomiHomeWidget = require("suwayomi/ui/home_widget")
 
 local SuwayomiHome = {}
 
+local function pluginIconDir()
+    local ok, path = pcall(package.searchpath, "suwayomi/ui/home", package.path)
+    if ok and path then
+        return path:gsub("suwayomi/ui/home%.lua$", "suwayomi/icons/")
+    end
+    return "suwayomi/icons/"
+end
+
 local function buildStatusStrings()
     local left_parts = {}
     local right_parts = {}
@@ -228,7 +236,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     options = options or {}
     local home_ref = { home = nil }
     local bottom_actions = options.bottom_actions or defaultBottomActions(home_ref)
-    local icon_dir = options.icon_dir or "suwayomi/icons/"
+    local icon_dir = options.icon_dir or pluginIconDir()
     local bottom_bar = SuwayomiBottomBar:new{
         buttons = bottom_actions,
         icon_dir = icon_dir,
