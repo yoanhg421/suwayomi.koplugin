@@ -602,36 +602,14 @@ local function paintWhiteCornerMasks(bb, tx, ty, tw, th, r)
     end
 end
 
-local function paintWhiteCornerBorderArcs(bb, tx, ty, tw, th, r, bsz)
-    local r_outer = r
-    local r_inner = r - bsz
-    for j = 0, r - 1 do
-        for c = 0, r - 1 do
-            local dx = r - c - 0.5
-            local dy = r - j - 0.5
-            local dist = math.sqrt(dx * dx + dy * dy)
-            if dist >= r_inner and dist <= r_outer then
-                bb:paintRect(tx + c, ty + j, 1, 1, Blitbuffer.COLOR_WHITE)
-                bb:paintRect(tx + tw - 1 - c, ty + j, 1, 1, Blitbuffer.COLOR_WHITE)
-                bb:paintRect(tx + c, ty + th - 1 - j, 1, 1, Blitbuffer.COLOR_WHITE)
-                bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j, 1, 1, Blitbuffer.COLOR_WHITE)
-            end
-        end
-    end
-end
-
 function GridMenuItem:buildCell(width, height)
-    local radius = scaled(8)
-    local border = Size.border.thin
-    local inner_w = math.max(1, width - 2 * border)
-    local inner_h = math.max(1, height - 2 * border)
-    local inner_dimen = Geom:new{ w = inner_w, h = inner_h }
+    local inner_dimen = Geom:new{ w = width, h = height }
     local content = OverlapGroup:new{
         dimen = inner_dimen,
-        self:buildCoverImage(inner_w, inner_h),
+        self:buildCoverImage(width, height),
         BottomContainer:new{
             dimen = inner_dimen,
-            self:buildTitleOverlay(inner_w),
+            self:buildTitleOverlay(width),
         },
     }
     return FrameContainer:new{
@@ -639,9 +617,7 @@ function GridMenuItem:buildCell(width, height)
         height = height,
         margin = 0,
         padding = 0,
-        bordersize = border,
-        radius = radius,
-        color = Blitbuffer.COLOR_WHITE,
+        bordersize = 0,
         background = Blitbuffer.COLOR_WHITE,
         content,
     }
@@ -657,14 +633,12 @@ function GridMenuItem:paintTo(bb, x, y)
     end
     local tx, ty, tw, th = x, y, d.w, d.h
     local r = scaled(8)
-    local bsz = self[1] and self[1].bordersize or Size.border.thin
     local max_r = math.floor((math.min(tw, th) - 1) / 2)
     r = math.min(r, max_r)
     if r < 2 then
         return
     end
     paintWhiteCornerMasks(bb, tx, ty, tw, th, r)
-    paintWhiteCornerBorderArcs(bb, tx, ty, tw, th, r, bsz)
 end
 
 function GridMenuItem:onFocus()

@@ -14,10 +14,12 @@ local Size   = require("ui/size")
 
 local Screen = Device.screen
 
+local Blitbuffer     = require("ffi/blitbuffer")
 local UIManager      = require("ui/uimanager")
 local OverlapGroup   = require("ui/widget/overlapgroup")
 local LeftContainer  = require("ui/widget/container/leftcontainer")
 local RightContainer = require("ui/widget/container/rightcontainer")
+local FrameContainer = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
 local IconButton      = require("ui/widget/iconbutton")
@@ -50,11 +52,17 @@ function SuwayomiStatusBar:init()
         padding = 0,
     }
 
+    self[1] = FrameContainer:new{
+        dimen = self.dimen:copy(),
+        background = Blitbuffer.COLOR_WHITE,
+        bordersize = 0,
+        padding = 0,
+    }
     self:refreshLeftGroup()
     local right_group = HorizontalGroup:new{ align = "center" }
     table.insert(right_group, self.right_text_widget)
     table.insert(right_group, HorizontalSpan:new{ width = self.margin })
-    self[2] = RightContainer:new{
+    self[3] = RightContainer:new{
         dimen = self.dimen:copy(),
         right_group,
     }
@@ -63,7 +71,7 @@ end
 
 function SuwayomiStatusBar:refreshLeftGroup()
     local left_group = HorizontalGroup:new{ align = "center" }
-    table.insert(left_group, HorizontalSpan:new{ width = self.margin or Size.padding.small })
+    table.insert(left_group, HorizontalSpan:new{ width = self.margin })
     if self.left_icon then
         local icon_size = Screen:scaleBySize(24)
         local icon = IconButton:new{
@@ -84,7 +92,7 @@ function SuwayomiStatusBar:refreshLeftGroup()
         table.insert(left_group, HorizontalSpan:new{ width = Size.padding.small })
     end
     table.insert(left_group, self.left_text_widget)
-    self[1] = LeftContainer:new{
+    self[2] = LeftContainer:new{
         dimen = self.dimen:copy(),
         left_group,
     }
