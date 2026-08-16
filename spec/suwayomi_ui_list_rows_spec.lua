@@ -512,7 +512,7 @@ describe("suwayomi/ui/list_rows", function()
 
         assert.are.equal("Chapter 1", chapter_row.text)
         assert.is_nil(chapter_row.subtitle)
-        assert.is_nil(chapter_row.mandatory)
+        assert.are.equal("tx:Read", chapter_row.mandatory)
     end)
 
     it("builds chapter rows with shared text columns and no thumbnail slot", function()
@@ -534,7 +534,7 @@ describe("suwayomi/ui/list_rows", function()
 
         assert.are.equal("Chapter 1", row.text)
         assert.is_nil(row.subtitle)
-        assert.is_nil(row.mandatory)
+        assert.are.equal("Read · Downloaded", row.mandatory)
         assert.is_nil(row.thumbnail_url)
         assert.is_nil(row.thumbnail_placeholder)
         assert.are.same(chapter, row.chapter)

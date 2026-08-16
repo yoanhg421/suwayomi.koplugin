@@ -424,6 +424,7 @@ function ListRows.buildChapterRow(chapter, options)
     options = options or {}
     return {
         text = ListRows.getChapterTitle(chapter),
+        mandatory = ListRows.getChapterMandatory(chapter),
         title_bold = true,
         chapter = chapter,
         callback = function()
