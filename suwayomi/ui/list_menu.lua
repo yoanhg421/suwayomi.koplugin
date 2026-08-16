@@ -933,6 +933,22 @@ function ListMenu.updateItemsGrid(menu, select_number, no_recalculate_dimen)
     local idx_offset = (menu.page - 1) * items_nb
     local visible_items = {}
 
+    local item_width = menu.item_dimen and menu.item_dimen.w or 0
+    local item_height = menu.item_dimen and menu.item_dimen.h or 0
+    local menu_x = menu.dimen and menu.dimen.x or 0
+    local menu_y = menu.dimen and menu.dimen.y or 0
+    local title_bar_h = 0
+    if menu.title_bar and menu.title_bar.getSize then
+        local ok, size = pcall(function()
+            return menu.title_bar:getSize()
+        end)
+        if ok and size and size.h then
+            title_bar_h = size.h
+        end
+    end
+    local base_x = menu_x + GRID_ITEM_MARGIN
+    local base_y = menu_y + title_bar_h + GRID_ITEM_MARGIN
+
     table.insert(menu.item_group, VerticalSpan:new{ width = GRID_ITEM_MARGIN })
     local row
     for idx = 1, items_nb do
@@ -962,11 +978,17 @@ function ListMenu.updateItemsGrid(menu, select_number, no_recalculate_dimen)
             table.insert(menu.layout, {})
         end
 
+        local col = (idx - 1) % nb_cols
+        local row_index = math.floor((idx - 1) / nb_cols)
+        local item_dimen = menu.item_dimen:copy()
+        item_dimen.x = base_x + col * (item_width + GRID_ITEM_MARGIN)
+        item_dimen.y = base_y + row_index * (item_height + GRID_ITEM_MARGIN)
+
         local item_widget = GridMenuItem:new{
             entry = item,
             text = getItemText(item),
             mandatory = item.mandatory,
-            dimen = menu.item_dimen:copy(),
+            dimen = item_dimen,
             menu = menu,
             show_parent = menu.show_parent,
         }
