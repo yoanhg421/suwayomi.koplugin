@@ -7,6 +7,7 @@
 
 local SuwayomiSettings = require("suwayomi/settings")
 local SuwayomiUI = require("suwayomi/ui")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
 local I18n = require("suwayomi/i18n")
 
 local DownloadsController = {}
@@ -303,6 +304,9 @@ function Methods:reconcileDownloadedChapterLedger(ledger)
                 entry.pending_read_state = true
                 changed = true
                 read_count = read_count + 1
+                if entry.manga_id and entry.chapter_id then
+                    SuwayomiOfflineStore:setReadProgress(entry.manga_id, entry.chapter_id, { is_read = true })
+                end
                 if self:markCurrentContextChapterReadFromLedger(entry) then
                     current_context_changed = true
                 end

@@ -6,6 +6,7 @@
 -- External data: Manga/chapter tables may come from API responses or cached UI state and are matched by stable ids.
 
 local SuwayomiDebug = require("suwayomi/debug")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
 
 local ChapterReadActions = {}
 ChapterReadActions.__index = ChapterReadActions
@@ -37,6 +38,9 @@ function Methods:markChapterRead(manga, chapter, options)
         self:upsertChapterLedgerEntryInLedger(options.ledger, manga, chapter, updates)
     else
         self:upsertChapterLedgerEntry(manga, chapter, updates)
+    end
+    if manga and manga.id and chapter and chapter.id then
+        SuwayomiOfflineStore:setReadProgress(manga.id, chapter.id, { is_read = true })
     end
 
     if self.current_chapter_context and self.current_chapter_context.chapters then
@@ -97,6 +101,9 @@ function Methods:markChapterUnread(manga, chapter, options)
         self:upsertChapterLedgerEntryInLedger(options.ledger, manga, chapter, updates)
     else
         self:upsertChapterLedgerEntry(manga, chapter, updates)
+    end
+    if manga and manga.id and chapter and chapter.id then
+        SuwayomiOfflineStore:setReadProgress(manga.id, chapter.id, { is_read = false, last_read_at = 0 })
     end
 
     if self.current_chapter_context and self.current_chapter_context.chapters then

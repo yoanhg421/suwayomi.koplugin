@@ -47,6 +47,24 @@ function SuwayomiOfflineSync:syncChapters(manga_id, chapters_result)
         end
     end
     SuwayomiOfflineStore:setChaptersMap(manga_id, chapter_map)
+    self:syncReadProgress(manga_id, chapters)
+end
+
+function SuwayomiOfflineSync:syncReadProgress(manga_id, chapters)
+    if type(chapters) ~= "table" then
+        return
+    end
+    for _, chapter in ipairs(chapters) do
+        if chapter and chapter.id and chapter.is_read == true then
+            local existing = SuwayomiOfflineStore:getReadProgress(manga_id, chapter.id)
+            if not existing or not existing.is_read then
+                SuwayomiOfflineStore:setReadProgress(manga_id, chapter.id, {
+                    is_read = true,
+                    last_read_at = os.time(),
+                })
+            end
+        end
+    end
 end
 
 return SuwayomiOfflineSync

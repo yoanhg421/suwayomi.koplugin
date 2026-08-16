@@ -114,9 +114,38 @@ function SuwayomiOfflineStore:setReadProgress(manga_id, chapter_id, progress)
     all_progress[manga_key][chapter_key] = {
         page = tonumber(progress and progress.page) or 0,
         is_read = progress and progress.is_read == true,
-        last_read_at = tonumber(progress and progress.last_read_at) or os.time(),
+        last_read_at = (progress and tonumber(progress.last_read_at)) or os.time(),
     }
     self:open():saveSetting("read_progress", all_progress):flush()
+end
+
+function SuwayomiOfflineStore:getMangaListByLastRead()
+    local manga_list = self:getMangaList()
+    local all_progress = self:open():readSetting("read_progress", {})
+    local result = {}
+    for _, manga in ipairs(manga_list) do
+        local manga_id = tostring(manga and manga.id)
+        local manga_progress = all_progress[manga_id] or {}
+        local last_read_at = 0
+        for _, chapter_progress in pairs(manga_progress) do
+            if type(chapter_progress) == "table" and chapter_progress.is_read == true then
+                last_read_at = math.max(last_read_at, tonumber(chapter_progress.last_read_at) or 0)
+            end
+        end
+        if last_read_at > 0 then
+            manga._suwayomi_last_read_at = last_read_at
+            table.insert(result, manga)
+        end
+    end
+    table.sort(result, function(a, b)
+        local a_at = a._suwayomi_last_read_at or 0
+        local b_at = b._suwayomi_last_read_at or 0
+        if a_at == b_at then
+            return tostring(a.title or "") < tostring(b.title or "")
+        end
+        return a_at > b_at
+    end)
+    return result
 end
 
 function SuwayomiOfflineStore:getLastSyncTime()

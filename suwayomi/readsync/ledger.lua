@@ -6,6 +6,7 @@
 -- External data: callers must continue to treat API responses, settings values, worker files, and filesystem paths as untrusted until checked locally.
 
 local SuwayomiSettings = require("suwayomi/settings")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
 
 local ReadSyncLedger = {}
 ReadSyncLedger.__index = ReadSyncLedger
@@ -194,6 +195,9 @@ function Methods:markLedgerEntryRead(entry)
     ledger_entry.read = true
     ledger_entry.pending_read_sync = true
     ledger_entry.pending_read_state = true
+    if ledger_entry.manga_id and ledger_entry.chapter_id then
+        SuwayomiOfflineStore:setReadProgress(ledger_entry.manga_id, ledger_entry.chapter_id, { is_read = true })
+    end
     self:markCurrentContextChapterReadFromLedger(ledger_entry)
     self:saveChapterLedger(ledger)
 

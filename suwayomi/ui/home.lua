@@ -14,6 +14,7 @@ local Device    = require("device")
 local ListMenu       = require("suwayomi/ui/list_menu")
 local ListRows       = require("suwayomi/ui/list_rows")
 local DownloadsUI    = require("suwayomi/ui/downloads")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
 local SuwayomiStatusBar = require("suwayomi/ui/status_bar")
 local SuwayomiBottomBar = require("suwayomi/ui/bottom_bar")
 local SuwayomiFooter = require("suwayomi/ui/footer")
@@ -192,20 +193,23 @@ local function buildDownloadsMenu(bottom_bar, home, snapshot)
     return menu
 end
 
-local function buildRecentMenu(bottom_bar, home)
+local function buildRecentMenu(onSelectCallback, bottom_bar, home, options)
+    options = options or {}
     local left, right = buildStatusStrings()
     local footer = buildFooter(bottom_bar, home)
     local menu_options = {
         title = nil,
-        grid = false,
-        item_table = {
-            { text = "Recent not yet wired", select_enabled = false },
-        },
+        grid = true,
+        item_table = ListRows.buildMangaMenuTable(SuwayomiOfflineStore:getMangaListByLastRead(), {
+            show_in_library = false,
+            on_select = onSelectCallback,
+        }),
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = left,
             right_text = right,
         },
         footer_widget = footer,
+        thumbnail_credentials = options.thumbnail_credentials,
         on_page_changed = onPageChanged,
     }
     local menu = ListMenu.create(menu_options)
@@ -279,6 +283,8 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     local home = SuwayomiHomeWidget:new{ menu = nil }
     home_ref.home = home
     home._suwayomi_bottom_bar = bottom_bar
+    home._suwayomi_on_select = onSelectCallback
+    home._suwayomi_home_options = options
     home._suwayomi_get_downloads_snapshot = options.getDownloadsSnapshot
     home._suwayomi_downloads_callbacks = options.downloads_callbacks
     home._suwayomi_download_directory_summary = options.download_directory_summary
@@ -316,7 +322,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
             menu = buildDownloadsMenu(self._suwayomi_bottom_bar, self, snapshot)
             self.tabs.downloads = menu
         elseif tab_id == "recent" then
-            menu = self.tabs.recent or buildRecentMenu(self._suwayomi_bottom_bar, self)
+            menu = self.tabs.recent or buildRecentMenu(self._suwayomi_on_select, self._suwayomi_bottom_bar, self, self._suwayomi_home_options)
             self.tabs.recent = menu
         elseif tab_id == "updates" then
             menu = self.tabs.updates or buildUpdatesMenu(self._suwayomi_bottom_bar, self)

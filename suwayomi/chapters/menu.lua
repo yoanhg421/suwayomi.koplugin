@@ -8,6 +8,7 @@
 local SuwayomiSettings = require("suwayomi/settings")
 local SuwayomiUI = require("suwayomi/ui")
 local SuwayomiDebug = require("suwayomi/debug")
+local SuwayomiOfflineStore = require("suwayomi/offline/store")
 local I18n = require("suwayomi/i18n")
 local MangaActionMenu = require("suwayomi/manga/action_menu")
 
@@ -116,6 +117,12 @@ function Methods:buildChapterMenuItems(manga, chapters, ledger)
                 if item._suwayomi_is_read ~= true then
                     item.pending_read_sync = true
                     chapter.pending_read_sync = true
+                end
+                if manga and manga.id and item.id then
+                    local progress = SuwayomiOfflineStore:getReadProgress(manga.id, item.id)
+                    if not progress or not progress.is_read then
+                        SuwayomiOfflineStore:setReadProgress(manga.id, item.id, { is_read = true })
+                    end
                 end
             end
             if chapter_exists and item.is_read == true and not metadata_finished then
