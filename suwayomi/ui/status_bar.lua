@@ -4,7 +4,7 @@
 -- used as a custom Menu title bar, keeping the KOReader top menu reachable
 -- on a tap outside the optional left icon.
 -- Owned state: left and right TextWidget labels, optional left icon.
--- Dependencies: KOReader widget containers, TextWidget, IconButton, UIManager.
+-- Dependencies: KOReader widget containers, TextWidget, IconButton, ImageWidget, UIManager.
 -- External data: rendered as the custom title bar of the library ListMenu.
 
 local Device = require("device")
@@ -24,7 +24,16 @@ local Widget         = require("ui/widget/widget")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
 local IconButton      = require("ui/widget/iconbutton")
+local ImageWidget     = require("ui/widget/imagewidget")
 local TextWidget      = require("ui/widget/textwidget")
+
+local function pluginIconDir()
+    local ok, path = pcall(package.searchpath, "suwayomi/ui/status_bar", package.path)
+    if ok and path then
+        return path:gsub("suwayomi/ui/status_bar%.lua$", "suwayomi/icons/")
+    end
+    return "suwayomi/icons/"
+end
 
 local SuwayomiStatusBar = OverlapGroup:extend{
     name = "suwayomi_status_bar",
@@ -41,6 +50,7 @@ function SuwayomiStatusBar:init()
     self.titlebar_height = self.dimen.h
     self.face = self.face or Font:getFace("x_smallinfofont")
     self.margin = self.margin or Screen:scaleBySize(8)
+    self.icon_dir = (self.icon_dir or pluginIconDir()):gsub("([^/])$", "%1/")
 
     self.left_text_widget = TextWidget:new{
         text = self.left_text or " ",
@@ -102,16 +112,14 @@ function SuwayomiStatusBar:refreshRightGroup(show_icon)
 
     local right_group = HorizontalGroup:new{ align = "center" }
     if show_icon then
+        local icon_size = Screen:scaleBySize(20)
         local ok, icon = pcall(function()
-            local icon_size = Screen:scaleBySize(20)
-            return IconButton:new{
-                icon = "appbar.refresh",
+            return ImageWidget:new{
+                file = self.icon_dir .. "arrows-clockwise.svg",
                 width = icon_size,
                 height = icon_size,
-                padding = 0,
-                allow_flash = false,
-                show_parent = self,
-                callback = function() end,
+                is_icon = true,
+                color = Blitbuffer.COLOR_BLACK,
             }
         end)
         if ok and icon then
