@@ -10,7 +10,16 @@ local SuwayomiAPI = require("suwayomi/api")
 local SuwayomiOfflineSync = require("suwayomi/offline/sync")
 local SuwayomiOfflineStore = require("suwayomi/offline/store")
 local ThumbnailWorker = require("suwayomi/ui/thumbnail_worker")
+local ThumbnailCache = require("suwayomi/ui/thumbnail_cache")
 local SubprocessJob = require("suwayomi/subprocess/job")
+
+local FFIUtil = require("ffi/util")
+
+local function yieldToUI()
+    if FFIUtil and FFIUtil.usleep then
+        pcall(FFIUtil.usleep, 5000)
+    end
+end
 
 local FullSyncWorker = {}
 
@@ -51,6 +60,7 @@ local function syncMangaChapters(credentials, manga)
         return false
     end
     SuwayomiOfflineSync:syncChapters(manga.id, result)
+    yieldToUI()
     return true
 end
 
@@ -60,9 +70,13 @@ local COVER_CACHE_OPTIONS = {
     height = 360,
 }
 
-local function syncMangaCover(credentials, manga)
+local function syncMangaCover(credentials, manga, previous)
     if not manga or not manga.thumbnail_url or manga.thumbnail_url == "" then
         return false
+    end
+    if previous and previous.thumbnail_url == manga.thumbnail_url
+            and ThumbnailCache.findRaw(credentials, manga.thumbnail_url) then
+        return true
     end
     local result_path = SubprocessJob.buildResultPath("thumbnail")
     local ok, result = pcall(function()
@@ -74,6 +88,7 @@ local function syncMangaCover(credentials, manga)
     if not ok or not result or not result.ok then
         return false
     end
+    yieldToUI()
     return true
 end
 
@@ -120,9 +135,10 @@ function FullSyncWorker:run(credentials, manga_list, result_path)
                 skipped = skipped + 1
             end
             if manga and manga.thumbnail_url and manga.thumbnail_url ~= "" then
-                syncMangaCover(credentials, manga)
+                syncMangaCover(credentials, manga, previous)
             end
         end
+        yieldToUI()
     end
 
     return self:writeResult(result_path, {
