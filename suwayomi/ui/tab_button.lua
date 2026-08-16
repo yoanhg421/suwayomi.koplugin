@@ -34,9 +34,6 @@ function SuwayomiTabButton:init()
                 file = self.icon_path,
                 width = self.icon_size,
                 height = self.icon_size,
-                is_icon = true,
-                color = self.icon_color or Blitbuffer.COLOR_BLACK,
-                dither = false,
             }
         end)
         if icon_ok then
