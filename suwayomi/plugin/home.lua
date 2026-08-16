@@ -138,9 +138,11 @@ function Methods:buildMenuActions()
             end,
             callback = function()
                 if self:_isSuwayomiShowing() then
-                    if self.closeSuwayomiPlugin then
-                        self:closeSuwayomiPlugin()
-                    end
+                    UIManager:nextTick(function()
+                        if self.closeSuwayomiPlugin then
+                            self:closeSuwayomiPlugin()
+                        end
+                    end)
                     return
                 end
                 if self.needsOnboardingSetup and self:needsOnboardingSetup() then
