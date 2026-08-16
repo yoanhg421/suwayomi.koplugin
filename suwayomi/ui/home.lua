@@ -5,7 +5,8 @@
 -- renders its own ListMenu inside the home container.
 -- Owned state: status refresh scheduling and the per-tab menu cache.
 -- Dependencies: ListMenu, ListRows, DownloadsUI, SuwayomiStatusBar,
---               SuwayomiBottomBar, SuwayomiHomeWidget, UIManager, Device.
+--               SuwayomiBottomBar, SuwayomiFooter, SuwayomiHomeWidget,
+--               UIManager, Device.
 
 local UIManager = require("ui/uimanager")
 local Device    = require("device")
@@ -15,6 +16,7 @@ local ListRows       = require("suwayomi/ui/list_rows")
 local DownloadsUI    = require("suwayomi/ui/downloads")
 local SuwayomiStatusBar = require("suwayomi/ui/status_bar")
 local SuwayomiBottomBar = require("suwayomi/ui/bottom_bar")
+local SuwayomiFooter = require("suwayomi/ui/footer")
 local SuwayomiHomeWidget = require("suwayomi/ui/home_widget")
 
 local SuwayomiHome = {}
@@ -75,9 +77,26 @@ local function scheduleStatusRefresh(menu)
     UIManager:scheduleIn(60, menu._suwayomi_status_update)
 end
 
+local function onPageChanged(menu)
+    if menu._suwayomi_footer_widget and menu._suwayomi_footer_widget.updatePage then
+        menu._suwayomi_footer_widget:updatePage(menu.page, menu.page_num)
+    end
+end
+
+local function buildFooter(bottom_bar, home)
+    local footer = SuwayomiFooter:new{
+        bottom_bar = bottom_bar,
+    }
+    footer.show_parent = home
+    footer.page_indicator.show_parent = home
+    footer.bottom_bar.show_parent = home
+    return footer
+end
+
 local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, options)
     options = options or {}
     local left, right = buildStatusStrings()
+    local footer = buildFooter(bottom_bar, home)
     local menu_options = {
         title = nil,
         grid = true,
@@ -89,8 +108,9 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, 
             left_text = left,
             right_text = right,
         },
-        footer_widget = bottom_bar,
+        footer_widget = footer,
         thumbnail_credentials = options.thumbnail_credentials,
+        on_page_changed = onPageChanged,
     }
     for _, item in ipairs(menu_options.item_table) do
         item.keep_menu_open = true
@@ -104,7 +124,9 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, 
 end
 
 local function buildDownloadsMenu(bottom_bar, home, snapshot)
+    local left, right = buildStatusStrings()
     local callbacks = home._suwayomi_downloads_callbacks or {}
+    local footer = buildFooter(bottom_bar, home)
     local menu_options = {
         title = nil,
         grid = false,
@@ -114,10 +136,11 @@ local function buildDownloadsMenu(bottom_bar, home, snapshot)
             { download_directory_summary = home._suwayomi_download_directory_summary }
         ),
         custom_title_bar = SuwayomiStatusBar:new{
-            left_text = "Downloads",
-            right_text = " ",
+            left_text = left,
+            right_text = right,
         },
-        footer_widget = bottom_bar,
+        footer_widget = footer,
+        on_page_changed = onPageChanged,
     }
     local menu = ListMenu.create(menu_options)
     if menu.title_bar then
@@ -128,6 +151,8 @@ local function buildDownloadsMenu(bottom_bar, home, snapshot)
 end
 
 local function buildRecentMenu(bottom_bar, home)
+    local left, right = buildStatusStrings()
+    local footer = buildFooter(bottom_bar, home)
     local menu_options = {
         title = nil,
         grid = false,
@@ -135,10 +160,11 @@ local function buildRecentMenu(bottom_bar, home)
             { text = "Recent not yet wired", select_enabled = false },
         },
         custom_title_bar = SuwayomiStatusBar:new{
-            left_text = "Recent",
-            right_text = " ",
+            left_text = left,
+            right_text = right,
         },
-        footer_widget = bottom_bar,
+        footer_widget = footer,
+        on_page_changed = onPageChanged,
     }
     local menu = ListMenu.create(menu_options)
     if menu.title_bar then
@@ -149,6 +175,8 @@ local function buildRecentMenu(bottom_bar, home)
 end
 
 local function buildUpdatesMenu(bottom_bar, home)
+    local left, right = buildStatusStrings()
+    local footer = buildFooter(bottom_bar, home)
     local menu_options = {
         title = nil,
         grid = false,
@@ -156,10 +184,11 @@ local function buildUpdatesMenu(bottom_bar, home)
             { text = "Updates not yet wired", select_enabled = false },
         },
         custom_title_bar = SuwayomiStatusBar:new{
-            left_text = "Updates",
-            right_text = " ",
+            left_text = left,
+            right_text = right,
         },
-        footer_widget = bottom_bar,
+        footer_widget = footer,
+        on_page_changed = onPageChanged,
     }
     local menu = ListMenu.create(menu_options)
     if menu.title_bar then
@@ -178,13 +207,13 @@ local function defaultBottomActions(home_ref)
     }
 end
 
-local function attachMenuToHome(menu, bottom_bar, home)
+local function attachMenuToHome(menu, _bottom_bar, home)
     if not menu or not home then
         return
     end
     if menu.footer then
-        menu.footer[1] = bottom_bar
-        menu._suwayomi_footer_widget = bottom_bar
+        menu.footer[1] = menu._suwayomi_footer_widget
+        menu._suwayomi_footer_widget:updatePage(menu.page, menu.page_num)
     end
     menu.show_parent = home
     if menu.title_bar then
@@ -252,9 +281,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
 
         attachMenuToHome(menu, self._suwayomi_bottom_bar, self)
 
-        if tab_id == "library" then
-            scheduleStatusRefresh(menu)
-        end
+        scheduleStatusRefresh(menu)
 
         if UIManager._window_stack then
             UIManager:setDirty(self, "ui")
