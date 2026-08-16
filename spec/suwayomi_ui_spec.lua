@@ -1438,10 +1438,10 @@ describe("suwayomi/ui", function()
         end)
 
         assert.are.equal("Sousou no Frieren", shown_dialog.title)
-        assertFileManagerListStyle(shown_dialog, 3, true)
+        assertFileManagerListStyle(shown_dialog, 1, true)
         assert.are.equal("Chapter 1", shown_dialog.item_table[1].text)
         assert.is_true(shown_dialog.item_table[1].title_bold)
-        assert.are.equal("Read · Downloaded", shown_dialog.item_table[1].mandatory)
+        assert.is_nil(shown_dialog.item_table[1].mandatory)
         assert.are.equal("Chapter 2", shown_dialog.item_table[2].text)
         assert.is_nil(shown_dialog.item_table[2].mandatory)
 
@@ -1476,7 +1476,7 @@ describe("suwayomi/ui", function()
 
         assert.is_nil(shown_dialog.custom_title_bar)
         assert.are.equal("appbar.menu", shown_dialog.title_bar_left_icon)
-        assertFileManagerListStyle(shown_dialog, 3, true)
+        assertFileManagerListStyle(shown_dialog, 1, true)
 
         shown_dialog.onLeftButtonTap()
 
@@ -1764,7 +1764,7 @@ describe("suwayomi/ui", function()
 
         assert.are.equal("list_menu", menu.renderer)
         assert.are.equal("New chapters", menu.title)
-        assert.are.equal("Queued", menu.item_table[1].mandatory)
+        assert.is_nil(menu.item_table[1].mandatory)
         assert.is_true(updated)
     end)
 
