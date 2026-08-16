@@ -240,22 +240,10 @@ function SuwayomiClient:showLibraryManga(category, credentials)
     }, nil, function(result)
         if result and result.ok and result.manga and #result.manga > 0 then
             if not FullSync:isRunning() then
-                local sync_snack
-                if self.ui and self.ui.showSnack then
-                    sync_snack = self.ui.showSnack(I18n.t("Syncing..."))
+                local last_sync = SuwayomiOfflineStore:getLastSyncTime()
+                if last_sync <= 0 or os.time() - last_sync >= 300 then
+                    FullSync:start(result.manga, function() end)
                 end
-                FullSync:start(result.manga, function(sync_result)
-                    if self.ui and self.ui.closeSnack then
-                        self.ui.closeSnack(sync_snack)
-                    end
-                    if self.ui and self.ui.showSnack then
-                        if sync_result and sync_result.ok then
-                            self.ui.showSnack(I18n.f("Library sync complete. %1 manga updated.", tostring(sync_result.synced or 0)), { timeout = 2 })
-                        else
-                            self.ui.showSnack(I18n.f("Library sync failed: %1", sync_result and sync_result.error or I18n.t("unknown error")), { timeout = 3 })
-                        end
-                    end
-                end)
             end
         end
         if not showed_offline then

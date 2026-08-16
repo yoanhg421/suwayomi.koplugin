@@ -61,13 +61,7 @@ function SuwayomiStatusBar:init()
         Widget:new{ dimen = self.dimen:copy() },
     }
     self:refreshLeftGroup()
-    local right_group = HorizontalGroup:new{ align = "center" }
-    table.insert(right_group, self.right_text_widget)
-    table.insert(right_group, HorizontalSpan:new{ width = self.margin })
-    self[3] = RightContainer:new{
-        dimen = self.dimen:copy(),
-        right_group,
-    }
+    self:refreshRightGroup(false)
     OverlapGroup.init(self)
 end
 
@@ -98,6 +92,54 @@ function SuwayomiStatusBar:refreshLeftGroup()
         dimen = self.dimen:copy(),
         left_group,
     }
+end
+
+function SuwayomiStatusBar:refreshRightGroup(show_icon)
+    if self._sync_icon_visible == show_icon then
+        return
+    end
+    self._sync_icon_visible = show_icon
+
+    local right_group = HorizontalGroup:new{ align = "center" }
+    if show_icon then
+        local ok, icon = pcall(function()
+            local icon_size = Screen:scaleBySize(20)
+            return IconButton:new{
+                icon = "appbar.refresh",
+                width = icon_size,
+                height = icon_size,
+                padding = 0,
+                allow_flash = false,
+                show_parent = self,
+                callback = function() end,
+            }
+        end)
+        if ok and icon then
+            table.insert(right_group, icon)
+            table.insert(right_group, HorizontalSpan:new{ width = self.margin })
+        end
+    end
+    table.insert(right_group, self.right_text_widget)
+    table.insert(right_group, HorizontalSpan:new{ width = self.margin })
+
+    self[3] = RightContainer:new{
+        dimen = self.dimen:copy(),
+        right_group,
+    }
+    UIManager:setDirty(self.show_parent or self, "ui", self.dimen)
+end
+
+function SuwayomiStatusBar:setSyncIcon(visible)
+    pcall(self.refreshRightGroup, self, visible == true)
+end
+
+function SuwayomiStatusBar:updateSyncIcon()
+    local ok, FullSync = pcall(require, "suwayomi/offline/full_sync")
+    if not ok or not FullSync or not FullSync.isRunning then
+        self:setSyncIcon(false)
+        return
+    end
+    self:setSyncIcon(FullSync:isRunning())
 end
 
 function SuwayomiStatusBar:generateVerticalLayout()

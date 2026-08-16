@@ -89,19 +89,17 @@ function Methods:buildHomeActions()
         {
             id = "sync",
             text = I18n.t("Sync"),
-            enabled = not FullSync:isRunning(),
+            enabled_func = function()
+                return not FullSync:isRunning()
+            end,
             callback = function()
                 if FullSync:isRunning() then
                     self:showMessage(I18n.t("A full sync is already in progress."))
                     return
                 end
-                local snack = SuwayomiUI.showSnack(I18n.t("Syncing..."))
                 FullSync:start(nil, function(result)
-                    SuwayomiUI.closeSnack(snack)
-                    if result and result.ok then
-                        SuwayomiUI.showSnack(I18n.f("Sync complete. %1 manga updated.", tostring(result.synced or 0)), { timeout = 2 })
-                    else
-                        SuwayomiUI.showSnack(I18n.f("Sync failed: %1", result and result.error or I18n.t("unknown error")), { timeout = 3 })
+                    if result and not result.ok then
+                        self:showMessage(I18n.f("Sync failed: %1", result.error or I18n.t("unknown error")))
                     end
                 end)
             end,
@@ -165,13 +163,9 @@ function Methods:buildMenuActions()
                     self:showMessage(I18n.t("A full sync is already in progress."))
                     return
                 end
-                local snack = SuwayomiUI.showSnack(I18n.t("Syncing..."))
                 FullSync:start(nil, function(result)
-                    SuwayomiUI.closeSnack(snack)
-                    if result and result.ok then
-                        SuwayomiUI.showSnack(I18n.f("Sync complete. %1 manga updated.", tostring(result.synced or 0)), { timeout = 2 })
-                    else
-                        SuwayomiUI.showSnack(I18n.f("Sync failed: %1", result and result.error or I18n.t("unknown error")), { timeout = 3 })
+                    if result and not result.ok then
+                        self:showMessage(I18n.f("Sync failed: %1", result.error or I18n.t("unknown error")))
                     end
                 end)
             end,

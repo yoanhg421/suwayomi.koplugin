@@ -85,6 +85,40 @@ local function scheduleStatusRefresh(menu)
     UIManager:scheduleIn(60, menu._suwayomi_status_update)
 end
 
+local function scheduleSyncRefresh(menu, interval)
+    if menu._suwayomi_sync_update then
+        UIManager:unschedule(menu._suwayomi_sync_update)
+    end
+    interval = tonumber(interval) or 2
+    menu._suwayomi_sync_update = function()
+        if not menu or not menu.show_parent then
+            menu._suwayomi_sync_update = nil
+            return
+        end
+        local active = false
+        local stack = UIManager._window_stack
+        if type(stack) == "table" then
+            for _, win in ipairs(stack) do
+                if win.widget == menu.show_parent then
+                    active = true
+                    break
+                end
+            end
+        end
+        if not active then
+            menu._suwayomi_sync_update = nil
+            return
+        end
+        if menu.title_bar and menu.title_bar.updateSyncIcon then
+            pcall(function()
+                menu.title_bar:updateSyncIcon()
+            end)
+        end
+        UIManager:scheduleIn(interval, menu._suwayomi_sync_update)
+    end
+    UIManager:scheduleIn(interval, menu._suwayomi_sync_update)
+end
+
 local function onPageChanged(menu)
     if menu._suwayomi_footer_widget and menu._suwayomi_footer_widget.updatePage then
         menu._suwayomi_footer_widget:updatePage(menu.page, menu.page_num)
@@ -265,6 +299,10 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
                 UIManager:unschedule(self.menu._suwayomi_status_update)
                 self.menu._suwayomi_status_update = nil
             end
+            if self.menu._suwayomi_sync_update then
+                UIManager:unschedule(self.menu._suwayomi_sync_update)
+                self.menu._suwayomi_sync_update = nil
+            end
             ListMenu.cancelThumbnailJobs(self.menu)
         end
 
@@ -292,6 +330,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
         attachMenuToHome(menu, self._suwayomi_bottom_bar, self)
 
         scheduleStatusRefresh(menu)
+        scheduleSyncRefresh(menu)
 
         if UIManager._window_stack then
             UIManager:setDirty(self, "ui")
@@ -302,6 +341,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
 
     UIManager:show(home)
     scheduleStatusRefresh(library_menu)
+    scheduleSyncRefresh(library_menu)
     return library_menu
 end
 
