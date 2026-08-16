@@ -264,6 +264,9 @@ local function attachMenuToHome(menu, _bottom_bar, home)
     menu.show_parent = home
     if menu.title_bar then
         menu.title_bar.show_parent = home
+        pcall(function()
+            menu.title_bar:updateSyncIcon()
+        end)
     end
     home[1] = menu
     home.menu = menu
