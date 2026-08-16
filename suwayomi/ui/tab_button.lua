@@ -25,7 +25,7 @@ function SuwayomiTabButton:init()
         w = self.width or 0,
         h = self.height or 0,
     }
-    self.icon_size = self.icon_size or Screen:scaleBySize(28)
+    self.icon_size = self.icon_size or Screen:scaleBySize(32)
 
     local vgroup = VerticalGroup:new{ align = "center" }
     if self.icon_path and self.icon_path ~= "" then
@@ -34,6 +34,8 @@ function SuwayomiTabButton:init()
                 file = self.icon_path,
                 width = self.icon_size,
                 height = self.icon_size,
+                is_icon = true,
+                color = self.icon_color or Blitbuffer.COLOR_BLACK,
             }
         end)
         if icon_ok then
