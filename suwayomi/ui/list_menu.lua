@@ -321,6 +321,7 @@ function ListMenuItem:buildThumbnail(slot_width, slot_height)
                 width = image_width,
                 height = image_height,
                 scale_factor = 0,
+                use_legacy_image_scaling = true,
             }
         end
     end
@@ -539,6 +540,7 @@ function GridMenuItem:buildCoverImage(width, height)
                 width = width,
                 height = height,
                 scale_factor = 0,
+                use_legacy_image_scaling = true,
             }
         end
     end

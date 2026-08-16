@@ -588,6 +588,7 @@ local function buildPosterWidget(modules, manga, options, width, height)
             width = width,
             height = height,
             scale_factor = 0,
+            use_legacy_image_scaling = true,
         })
     end
     if not poster then
