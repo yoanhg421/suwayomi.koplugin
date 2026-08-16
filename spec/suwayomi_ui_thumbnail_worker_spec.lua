@@ -64,8 +64,8 @@ describe("suwayomi/ui/thumbnail_worker", function()
                     assert.are.equal("jpeg bytes", body)
                     assert.are.equal(10, size)
                     assert.is_false(want_frames)
-                    assert.are.equal(96, width)
-                    assert.are.equal(96, height)
+                    assert.are.equal(240, width)
+                    assert.are.equal(360, height)
                     function decoded_bitmap:free()
                         self.freed = true
                     end
@@ -143,8 +143,8 @@ describe("suwayomi/ui/thumbnail_worker", function()
                     assert.are.equal("webp bytes", body)
                     assert.are.equal(10, size)
                     assert.is_false(want_frames)
-                    assert.are.equal(96, width)
-                    assert.are.equal(96, height)
+                    assert.are.equal(240, width)
+                    assert.are.equal(360, height)
                     function decoded_bitmap:free()
                         self.freed = true
                     end

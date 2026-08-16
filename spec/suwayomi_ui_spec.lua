@@ -780,7 +780,7 @@ describe("suwayomi/ui", function()
         assert.are.equal("thumb://cached", events.thumbnail_lookup.thumbnail_url)
         assert.are.equal(credentials, events.thumbnail_lookup.credentials)
         assert.are.same({
-            variant = "poster",
+            variant = "raw",
             width = 240,
             height = 360,
         }, events.thumbnail_lookup.options)
@@ -849,7 +849,7 @@ describe("suwayomi/ui", function()
         assert.are.equal("thumb://missing", events.poster_worker_run.thumbnail_url)
         assert.are.equal("/tmp/manga_info_poster.json", events.poster_worker_run.result_path)
         assert.are.same({
-            variant = "poster",
+            variant = "raw",
             width = 240,
             height = 360,
         }, events.poster_worker_run.options)
@@ -1041,9 +1041,9 @@ describe("suwayomi/ui", function()
             assert.are.equal(layout.description_height, description.height, case.name)
             assert.are.equal(dialog, description.dialog, case.name)
             assert.are.same({
-                variant = "poster",
-                width = case.bucket.width,
-                height = case.bucket.height,
+                variant = "raw",
+                width = 240,
+                height = 360,
             }, events.thumbnail_lookup.options, case.name)
 
             if case.mode == "stacked" then

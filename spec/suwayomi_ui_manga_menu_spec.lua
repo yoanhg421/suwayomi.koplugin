@@ -635,14 +635,14 @@ describe("suwayomi/ui/manga_menu", function()
         }
 
         assert.are.same({
-            variant = "manga_cover",
-            width = 64,
-            height = 96,
+            variant = "raw",
+            width = 240,
+            height = 360,
         }, seen_options)
         assert.are.same({
-            variant = "manga_cover",
-            width = 64,
-            height = 96,
+            variant = "raw",
+            width = 240,
+            height = 360,
         }, started_jobs[1].thumbnail_options)
     end)
 

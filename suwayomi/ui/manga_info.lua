@@ -9,14 +9,9 @@ local I18n = require("suwayomi/i18n")
 
 local MangaInfo = {}
 local POSTER_CACHE_OPTIONS = {
-    variant = "poster",
+    variant = "raw",
     width = 240,
     height = 360,
-}
-local POSTER_BUCKETS = {
-    compact = { variant = "poster", width = 160, height = 240 },
-    normal = POSTER_CACHE_OPTIONS,
-    large = { variant = "poster", width = 320, height = 480 },
 }
 
 local function requireWidgetModules()
@@ -377,22 +372,8 @@ local function estimateWrappedLineCount(text, width, char_width)
     return lines
 end
 
-local function copyPosterOptions(options)
-    return {
-        variant = options.variant,
-        width = options.width,
-        height = options.height,
-    }
-end
-
-local function posterCacheOptionsForSlot(width, height)
-    if width >= 280 or height >= 420 then
-        return copyPosterOptions(POSTER_BUCKETS.large)
-    end
-    if width <= 180 or height <= 270 then
-        return copyPosterOptions(POSTER_BUCKETS.compact)
-    end
-    return copyPosterOptions(POSTER_BUCKETS.normal)
+local function posterCacheOptionsForSlot(_width, _height)
+    return POSTER_CACHE_OPTIONS
 end
 
 local function computeDialogBounds(modules)

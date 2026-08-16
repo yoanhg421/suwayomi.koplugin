@@ -81,26 +81,11 @@ local function freeBitmap(bitmap)
 end
 
 local function normalizeDecodeOptions(options)
-    if type(options) ~= "table" then
-        return {
-            width = ThumbnailWorker.DECODED_THUMBNAIL_SIZE,
-            height = ThumbnailWorker.DECODED_THUMBNAIL_SIZE,
-        }
-    end
-    local default_width = options.variant == "poster" and ThumbnailWorker.POSTER_WIDTH or ThumbnailWorker.DECODED_THUMBNAIL_SIZE
-    local default_height = options.variant == "poster" and ThumbnailWorker.POSTER_HEIGHT or ThumbnailWorker.DECODED_THUMBNAIL_SIZE
-    local width = math.floor(tonumber(options.width) or default_width)
-    local height = math.floor(tonumber(options.height) or default_height)
-    if width < 1 then
-        width = ThumbnailWorker.DECODED_THUMBNAIL_SIZE
-    end
-    if height < 1 then
-        height = ThumbnailWorker.DECODED_THUMBNAIL_SIZE
-    end
+    local variant = type(options) == "table" and options.variant or nil
     return {
-        variant = options.variant,
-        width = width,
-        height = height,
+        variant = variant,
+        width = ThumbnailWorker.POSTER_WIDTH,
+        height = ThumbnailWorker.POSTER_HEIGHT,
     }
 end
 

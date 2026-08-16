@@ -214,6 +214,12 @@ local function thumbnailOptionsForItem(item)
     return options
 end
 
+local RAW_THUMBNAIL_OPTIONS = {
+    variant = "raw",
+    width = 240,
+    height = 360,
+}
+
 local function thumbnailSlotDimensions(item, row_height, fallback_height)
     local options = thumbnailOptionsForItem(item)
     if not options then
@@ -1063,16 +1069,15 @@ function ListMenu.prepareThumbnail(menu, item)
     if not item or not item.thumbnail_url or item.thumbnail_url == "" then
         return
     end
-    local thumbnail_options = thumbnailOptionsForItem(item)
     item.thumbnail_path = item.thumbnail_path
-        or ThumbnailCache.find(menu._suwayomi_thumbnail_credentials, item.thumbnail_url, thumbnail_options)
+        or ThumbnailCache.find(menu._suwayomi_thumbnail_credentials, item.thumbnail_url, RAW_THUMBNAIL_OPTIONS)
     if item.thumbnail_path then
         item.thumbnail_failed = nil
     end
 end
 
-local function getThumbnailKey(credentials, thumbnail_url, thumbnail_options)
-    return ThumbnailCache.getKey(credentials, thumbnail_url, thumbnail_options)
+local function getThumbnailKey(credentials, thumbnail_url)
+    return ThumbnailCache.getKey(credentials, thumbnail_url, RAW_THUMBNAIL_OPTIONS)
 end
 
 local function markThumbnailResult(menu, thumbnail_key, path)
@@ -1080,8 +1085,7 @@ local function markThumbnailResult(menu, thumbnail_key, path)
         if item.thumbnail_url
             and getThumbnailKey(
                 menu._suwayomi_thumbnail_credentials,
-                item.thumbnail_url,
-                thumbnailOptionsForItem(item)
+                item.thumbnail_url
             ) == thumbnail_key
         then
             item.thumbnail_loading = nil
@@ -1098,8 +1102,8 @@ end
 function ListMenu.startThumbnailJob(menu, item)
     local credentials = menu._suwayomi_thumbnail_credentials
     local thumbnail_url = item.thumbnail_url
-    local thumbnail_options = thumbnailOptionsForItem(item)
-    local thumbnail_key = thumbnail_url and getThumbnailKey(credentials, thumbnail_url, thumbnail_options)
+    local thumbnail_options = RAW_THUMBNAIL_OPTIONS
+    local thumbnail_key = thumbnail_url and getThumbnailKey(credentials, thumbnail_url)
     if not item.thumbnail_url
         or item.thumbnail_path
         or item.thumbnail_loading

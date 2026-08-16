@@ -55,28 +55,22 @@ local function syncMangaChapters(credentials, manga)
     return true
 end
 
-local POSTER_CACHE_OPTIONS = {
-    variant = "manga_poster",
+local COVER_CACHE_OPTIONS = {
+    variant = "raw",
     width = 240,
     height = 360,
 }
 
-local ROW_COVER_OPTIONS = {
-    variant = "manga_cover",
-    width = 64,
-    height = 96,
-}
-
-local function syncMangaCover(credentials, manga, options)
+local function syncMangaCover(credentials, manga)
     if not manga or not manga.thumbnail_url or manga.thumbnail_url == "" then
         return false
     end
-    if ThumbnailCache.find(credentials, manga.thumbnail_url, options) then
+    if ThumbnailCache.find(credentials, manga.thumbnail_url, COVER_CACHE_OPTIONS) then
         return true
     end
     local result_path = SubprocessJob.buildResultPath("thumbnail")
     local ok, result = pcall(function()
-        return ThumbnailWorker:run(credentials, manga.thumbnail_url, result_path, options)
+        return ThumbnailWorker:run(credentials, manga.thumbnail_url, result_path, COVER_CACHE_OPTIONS)
     end)
     pcall(function()
         os.remove(result_path)
@@ -131,8 +125,7 @@ function FullSyncWorker:run(credentials, manga_list, result_path)
             end
         end
         if manga and manga.thumbnail_url and manga.thumbnail_url ~= "" then
-            syncMangaCover(credentials, manga, POSTER_CACHE_OPTIONS)
-            syncMangaCover(credentials, manga, ROW_COVER_OPTIONS)
+            syncMangaCover(credentials, manga)
         end
     end
 
