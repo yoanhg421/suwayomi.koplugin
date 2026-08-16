@@ -116,6 +116,12 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     local home = SuwayomiHomeWidget:new{ menu = menu }
     home_ref.home = home
 
+    menu.show_parent = home
+    if menu.title_bar then
+        menu.title_bar.show_parent = home
+    end
+    bottom_bar.show_parent = home
+
     UIManager:show(home)
     scheduleStatusRefresh(menu)
     return menu
