@@ -37,6 +37,7 @@ function SuwayomiStatusBar:init()
     }
     self.titlebar_height = self.dimen.h
     self.face = self.face or Font:getFace("x_smallinfofont")
+    self.margin = self.margin or Size.padding.small
 
     self.left_text_widget = TextWidget:new{
         text = self.left_text or " ",
@@ -50,15 +51,19 @@ function SuwayomiStatusBar:init()
     }
 
     self:refreshLeftGroup()
+    local right_group = HorizontalGroup:new{ align = "center" }
+    table.insert(right_group, self.right_text_widget)
+    table.insert(right_group, HorizontalSpan:new{ width = self.margin })
     self[2] = RightContainer:new{
         dimen = self.dimen:copy(),
-        self.right_text_widget,
+        right_group,
     }
     OverlapGroup.init(self)
 end
 
 function SuwayomiStatusBar:refreshLeftGroup()
     local left_group = HorizontalGroup:new{ align = "center" }
+    table.insert(left_group, HorizontalSpan:new{ width = self.margin or Size.padding.small })
     if self.left_icon then
         local icon_size = Screen:scaleBySize(24)
         local icon = IconButton:new{

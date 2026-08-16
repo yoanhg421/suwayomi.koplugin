@@ -3,7 +3,7 @@
 -- Responsibility: render a tappable icon+text cell for the bottom tab bar.
 -- Owned state: the icon and text widgets, the tap area.
 -- Dependencies: ImageWidget, TextWidget, VerticalGroup, CenterContainer,
---               InputContainer, Font, Blitbuffer, Device.
+--               InputContainer, Font, Blitbuffer, Screen.
 
 local Blitbuffer = require("ffi/blitbuffer")
 local CenterContainer = require("ui/widget/container/centercontainer")
@@ -12,6 +12,7 @@ local Geom = require("ui/geometry")
 local GestureRange = require("ui/gesturerange")
 local ImageWidget = require("ui/widget/imagewidget")
 local InputContainer = require("ui/widget/container/inputcontainer")
+local Screen = require("device").screen
 local TextWidget = require("ui/widget/textwidget")
 local VerticalGroup = require("ui/widget/verticalgroup")
 
@@ -24,14 +25,15 @@ function SuwayomiTabButton:init()
         w = self.width or 0,
         h = self.height or 0,
     }
+    self.icon_size = self.icon_size or Screen:scaleBySize(28)
 
     local vgroup = VerticalGroup:new{ align = "center" }
     if self.icon_path and self.icon_path ~= "" then
         local icon_ok, icon_widget = pcall(function()
             return ImageWidget:new{
                 file = self.icon_path,
-                width = self.icon_size or 22,
-                height = self.icon_size or 22,
+                width = self.icon_size,
+                height = self.icon_size,
                 is_icon = true,
                 color = self.icon_color or Blitbuffer.COLOR_BLACK,
             }

@@ -518,9 +518,6 @@ function GridMenuItem:init()
 end
 
 function GridMenuItem:buildCoverImage(width, height)
-    local border = Size.border.thin
-    local image_width = math.max(1, width - 2 * border)
-    local image_height = math.max(1, height - 2 * border)
     local image
     if self.entry.thumbnail_path then
         local is_decoded_path = ThumbnailCache.isDecodedPath and ThumbnailCache.isDecodedPath(self.entry.thumbnail_path)
@@ -533,31 +530,23 @@ function GridMenuItem:buildCoverImage(width, height)
         if decoded_image then
             image = newImageWidget{
                 image = decoded_image,
-                width = image_width,
-                height = image_height,
+                width = width,
+                height = height,
                 scale_factor = 0,
             }
         end
     end
     if not image then
         image = CenterContainer:new{
-            dimen = Geom:new{ w = image_width, h = image_height },
+            dimen = Geom:new{ w = width, h = height },
             TextWidget:new{
                 text = placeholderText(self.text),
-                face = fontFace("cfont", math.max(10, math.floor(math.min(image_width, image_height) / 6))),
+                face = fontFace("cfont", math.max(10, math.floor(math.min(width, height) / 6))),
                 fgcolor = Blitbuffer.COLOR_DARK_GRAY,
             },
         }
     end
-    return FrameContainer:new{
-        width = width,
-        height = height,
-        margin = 0,
-        padding = 0,
-        bordersize = border,
-        radius = scaled(8),
-        image,
-    }
+    return image
 end
 
 function GridMenuItem:buildTitleOverlay(width)
@@ -601,14 +590,28 @@ function GridMenuItem:buildTitleOverlay(width)
 end
 
 function GridMenuItem:buildCell(width, height)
-    local dimen = Geom:new{ w = width, h = height }
-    return OverlapGroup:new{
-        dimen = dimen,
-        self:buildCoverImage(width, height),
+    local border = scaled(8)
+    local inner_w = math.max(1, width - 2 * border)
+    local inner_h = math.max(1, height - 2 * border)
+    local inner_dimen = Geom:new{ w = inner_w, h = inner_h }
+    local content = OverlapGroup:new{
+        dimen = inner_dimen,
+        self:buildCoverImage(inner_w, inner_h),
         BottomContainer:new{
-            dimen = dimen,
-            self:buildTitleOverlay(width),
+            dimen = inner_dimen,
+            self:buildTitleOverlay(inner_w),
         },
+    }
+    return FrameContainer:new{
+        width = width,
+        height = height,
+        margin = 0,
+        padding = 0,
+        bordersize = border,
+        radius = border,
+        color = Blitbuffer.COLOR_WHITE,
+        background = Blitbuffer.COLOR_WHITE,
+        content,
     }
 end
 
