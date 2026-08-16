@@ -130,27 +130,34 @@ end
 
 
 function Methods:buildMenuActions()
-    local open_action = {
-        id = "open",
-        text = I18n.t("Open"),
-        callback = function()
-            return self:showHome()
-        end,
-    }
-    if self.suwayomi_home_menu then
-        open_action.text = I18n.t("Close")
-        open_action.callback = function()
-            if self.closeSuwayomiPlugin then
-                self:closeSuwayomiPlugin()
-            end
-        end
-    end
     return {
-        open_action,
+        {
+            id = "open",
+            text_func = function()
+                return self:_isSuwayomiShowing() and I18n.t("Close") or I18n.t("Open")
+            end,
+            callback = function()
+                if self:_isSuwayomiShowing() then
+                    if self.closeSuwayomiPlugin then
+                        self:closeSuwayomiPlugin()
+                    end
+                    return
+                end
+                if self.needsOnboardingSetup and self:needsOnboardingSetup() then
+                    self:showOnboardingSetup({ first_run = true })
+                    return
+                end
+                return self:showTopLevelScreen("library", function()
+                    return self:showLibrary()
+                end)
+            end,
+        },
         {
             id = "sync",
             text = I18n.t("Sync"),
-            enabled = not FullSync:isRunning(),
+            enabled_func = function()
+                return not FullSync:isRunning()
+            end,
             callback = function()
                 if FullSync:isRunning() then
                     self:showMessage(I18n.t("A full sync is already in progress."))
@@ -283,19 +290,10 @@ end
 
 
 function Methods:_isSuwayomiShowing()
-    if not self.suwayomi_home_menu then
+    if not self.suwayomi_navigation then
         return false
     end
-    local stack = UIManager._window_stack
-    if type(stack) ~= "table" then
-        return false
-    end
-    for _, win in ipairs(stack) do
-        if win.widget == self.suwayomi_home_menu then
-            return true
-        end
-    end
-    return false
+    return #self.suwayomi_navigation.entries > 0
 end
 
 
@@ -410,8 +408,10 @@ function Methods:addToMainMenu(menu_items)
         table.insert(suwayomi_tab_order, menu_id)
         menu_items[menu_id] = {
             text = action.text,
+            text_func = action.text_func,
             sorting_hint = "suwayomi_tab",
             enabled = action.enabled,
+            enabled_func = action.enabled_func,
             callback = action.callback,
         }
     end
