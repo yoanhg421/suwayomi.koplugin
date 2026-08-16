@@ -21,7 +21,7 @@ local SuwayomiBottomBar = HorizontalGroup:extend{
 function SuwayomiBottomBar:init()
     local buttons = self.buttons or {}
     local count = #buttons
-    local bar_height = self.height or Screen:scaleBySize(60)
+    local bar_height = self.height or Screen:scaleBySize(70)
     local screen_w = Screen:getWidth()
     local button_w = count > 0 and math.floor(screen_w / count) or screen_w
     local icon_dir = self.icon_dir and (self.icon_dir:gsub("([^/])$", "%1/")) or ""

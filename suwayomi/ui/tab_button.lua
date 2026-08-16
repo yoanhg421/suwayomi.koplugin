@@ -27,7 +27,7 @@ function SuwayomiTabButton:init()
     }
     self.icon_size = self.icon_size or Screen:scaleBySize(32)
 
-    local vgroup = VerticalGroup:new{ align = "center" }
+    local vgroup = VerticalGroup:new{ align = "center", padding = 0 }
     if self.icon_path and self.icon_path ~= "" then
         local icon_ok, icon_widget = pcall(function()
             return ImageWidget:new{
