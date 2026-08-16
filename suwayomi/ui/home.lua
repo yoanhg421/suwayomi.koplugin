@@ -75,7 +75,8 @@ local function scheduleStatusRefresh(menu)
     UIManager:scheduleIn(60, menu._suwayomi_status_update)
 end
 
-local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home)
+local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, options)
+    options = options or {}
     local left, right = buildStatusStrings()
     local menu_options = {
         title = nil,
@@ -89,6 +90,7 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home)
             right_text = right,
         },
         footer_widget = bottom_bar,
+        thumbnail_credentials = options.thumbnail_credentials,
     }
     for _, item in ipairs(menu_options.item_table) do
         item.keep_menu_open = true
@@ -188,7 +190,8 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
         manga_list,
         onSelectCallback,
         bottom_bar,
-        home
+        home,
+        options
     )
     home.tabs.library = library_menu
 
