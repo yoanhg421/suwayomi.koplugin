@@ -1,18 +1,20 @@
 -- Boundary: home screen footer container.
 --
--- Responsibility: stack the page-indicator dots above a top border line
+-- Responsibility: center the page-indicator dots above a top border line
 -- and the bottom tab bar.
 -- Owned state: the page indicator, top border, and bottom bar widgets.
--- Dependencies: VerticalGroup, LineWidget, Geom, Blitbuffer, Screen,
---               SuwayomiPageIndicator.
+-- Dependencies: VerticalGroup, CenterContainer, LineWidget, Geom, Blitbuffer,
+--               Screen, SuwayomiPageIndicator.
 
 local Blitbuffer = require("ffi/blitbuffer")
+local CenterContainer = require("ui/widget/container/centercontainer")
 local Geom = require("ui/geometry")
 local LineWidget = require("ui/widget/linewidget")
 local Screen = require("device").screen
 local Size = require("ui/size")
 local SuwayomiPageIndicator = require("suwayomi/ui/page_indicator")
 local VerticalGroup = require("ui/widget/verticalgroup")
+local VerticalSpan = require("ui/widget/verticalspan")
 
 local SuwayomiFooter = VerticalGroup:extend{
     name = "suwayomi_footer",
@@ -27,7 +29,7 @@ function SuwayomiFooter:init()
         page = 1,
         total = 1,
     }
-    self.top_line = LineWidget:new{
+    local top_line = LineWidget:new{
         dimen = Geom:new{
             w = screen_w,
             h = Size.line.thin,
@@ -36,9 +38,16 @@ function SuwayomiFooter:init()
         style = "solid",
     }
     self.bottom_bar = self.bottom_bar
-    self[1] = self.page_indicator
-    self[2] = self.top_line
-    self[3] = self.bottom_bar
+    self[1] = CenterContainer:new{
+        dimen = Geom:new{
+            w = screen_w,
+            h = self.page_indicator:getSize().h,
+        },
+        self.page_indicator,
+    }
+    self[2] = top_line
+    self[3] = VerticalSpan:new{ width = 2 }
+    self[4] = self.bottom_bar
     self:resetLayout()
 end
 

@@ -37,7 +37,7 @@ function SuwayomiStatusBar:init()
     }
     self.titlebar_height = self.dimen.h
     self.face = self.face or Font:getFace("x_smallinfofont")
-    self.margin = self.margin or Size.padding.small
+    self.margin = self.margin or Screen:scaleBySize(8)
 
     self.left_text_widget = TextWidget:new{
         text = self.left_text or " ",

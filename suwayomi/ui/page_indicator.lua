@@ -1,6 +1,6 @@
 -- Boundary: tab page indicator dots.
 --
--- Responsibility: render a row of filled/unfilled dots that show the current
+-- Responsibility: render a row of centered filled dots that show the current
 -- page number inside a paged grid.
 -- Owned state: dot widgets.
 -- Dependencies: HorizontalGroup, TextWidget, UIManager, Font, Blitbuffer.
@@ -16,8 +16,7 @@ local SuwayomiPageIndicator = HorizontalGroup:extend{
     name = "suwayomi_page_indicator",
 }
 
-local ACTIVE_DOT = "\u{25CF}"
-local INACTIVE_DOT = "\u{25CB}"
+local DOT = "\u{25CF}"
 
 function SuwayomiPageIndicator:init()
     self.face = self.face or Font:getFace("xx_smallinfofont", 10)
@@ -43,12 +42,12 @@ function SuwayomiPageIndicator:setActive(page, total)
     self:clear()
     for i = 1, total do
         table.insert(self, TextWidget:new{
-            text = (i == page) and ACTIVE_DOT or INACTIVE_DOT,
+            text = DOT,
             face = self.face,
             fgcolor = (i == page) and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_GRAY,
         })
         if i < total then
-            table.insert(self, HorizontalSpan:new{ width = 4 })
+            table.insert(self, HorizontalSpan:new{ width = 6 })
         end
     end
     self:resetLayout()
