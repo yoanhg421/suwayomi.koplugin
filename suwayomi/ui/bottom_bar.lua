@@ -45,7 +45,7 @@ function SuwayomiBottomBar:init()
         })
     end
     self:resetLayout()
-    self.dimen = self:getSize() and self:getSize():copy() or Geom:new{ w = screen_w, h = bar_height }
+    self.dimen = Geom:new{ w = screen_w, h = bar_height }
 end
 
 return SuwayomiBottomBar
