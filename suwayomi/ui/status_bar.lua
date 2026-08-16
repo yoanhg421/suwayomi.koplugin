@@ -20,6 +20,7 @@ local OverlapGroup   = require("ui/widget/overlapgroup")
 local LeftContainer  = require("ui/widget/container/leftcontainer")
 local RightContainer = require("ui/widget/container/rightcontainer")
 local FrameContainer = require("ui/widget/container/framecontainer")
+local Widget         = require("ui/widget/widget")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
 local IconButton      = require("ui/widget/iconbutton")
@@ -57,6 +58,7 @@ function SuwayomiStatusBar:init()
         background = Blitbuffer.COLOR_WHITE,
         bordersize = 0,
         padding = 0,
+        Widget:new{ dimen = self.dimen:copy() },
     }
     self:refreshLeftGroup()
     local right_group = HorizontalGroup:new{ align = "center" }
