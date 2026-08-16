@@ -1237,6 +1237,8 @@ local function cancelThumbnailJobs(menu)
     menu._suwayomi_thumbnail_generation = (menu._suwayomi_thumbnail_generation or 0) + 1
 end
 
+ListMenu.cancelThumbnailJobs = cancelThumbnailJobs
+
 function ListMenu.install(menu, options)
     menu._suwayomi_thumbnail_credentials = options and options.thumbnail_credentials
     menu._suwayomi_on_close = options and options.on_close
