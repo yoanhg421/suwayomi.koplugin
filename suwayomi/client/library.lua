@@ -165,6 +165,9 @@ function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
         end,
     }) or {}
     menu_options.thumbnail_credentials = credentials
+    menu_options.getDownloadsSnapshot = function()
+        return self.plugin:getDownloadQueue():getSnapshot()
+    end
     local library_menu
     local pending_library_menu_refresh = false
     local function refreshLibraryMangaMenu()

@@ -101,11 +101,11 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home)
     return menu
 end
 
-local function buildDownloadsMenu(bottom_bar, home)
+local function buildDownloadsMenu(bottom_bar, home, snapshot)
     local menu_options = {
         title = nil,
         grid = false,
-        item_table = DownloadsUI.buildDownloadsMenuTable({}, {}),
+        item_table = DownloadsUI.buildDownloadsMenuTable(snapshot or {}, {}),
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = "Downloads",
             right_text = " ",
@@ -181,6 +181,7 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     local home = SuwayomiHomeWidget:new{ menu = nil }
     home_ref.home = home
     home._suwayomi_bottom_bar = bottom_bar
+    home._suwayomi_get_downloads_snapshot = options.getDownloadsSnapshot
     home.tabs = {}
 
     local library_menu = buildLibraryMenu(
@@ -200,15 +201,18 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
             ListMenu.cancelThumbnailJobs(self.menu)
         end
 
-        local menu = self.tabs[tab_id]
-        if not menu then
-            if tab_id == "downloads" then
-                menu = buildDownloadsMenu(self._suwayomi_bottom_bar, self)
-                self.tabs.downloads = menu
-            elseif tab_id == "settings" then
-                menu = buildSettingsMenu(self._suwayomi_bottom_bar, self)
-                self.tabs.settings = menu
-            end
+        local menu
+        if tab_id == "library" then
+            menu = self.tabs.library
+        elseif tab_id == "downloads" then
+            local snapshot = self._suwayomi_get_downloads_snapshot
+                and self._suwayomi_get_downloads_snapshot()
+                or {}
+            menu = buildDownloadsMenu(self._suwayomi_bottom_bar, self, snapshot)
+            self.tabs.downloads = menu
+        elseif tab_id == "settings" then
+            menu = self.tabs.settings or buildSettingsMenu(self._suwayomi_bottom_bar, self)
+            self.tabs.settings = menu
         end
 
         if not menu then
