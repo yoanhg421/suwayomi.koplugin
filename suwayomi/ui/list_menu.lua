@@ -535,11 +535,17 @@ function GridMenuItem:buildCoverImage(width, height)
             decoded_image = ok and decoded_image or nil
         end
         if decoded_image then
+            local img_w = decoded_image.getWidth and decoded_image:getWidth() or ThumbnailWorker.POSTER_WIDTH
+            local img_h = decoded_image.getHeight and decoded_image:getHeight() or ThumbnailWorker.POSTER_HEIGHT
+            local scale_factor = math.max(
+                (img_w and img_w > 0) and (width / img_w) or 1,
+                (img_h and img_h > 0) and (height / img_h) or 1
+            )
             image = newImageWidget{
                 image = decoded_image,
                 width = width,
                 height = height,
-                scale_factor = 0,
+                scale_factor = scale_factor,
                 use_legacy_image_scaling = true,
             }
         end
