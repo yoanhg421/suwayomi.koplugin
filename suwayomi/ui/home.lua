@@ -104,10 +104,15 @@ local function buildLibraryMenu(manga_list, onSelectCallback, bottom_bar, home, 
 end
 
 local function buildDownloadsMenu(bottom_bar, home, snapshot)
+    local callbacks = home._suwayomi_downloads_callbacks or {}
     local menu_options = {
         title = nil,
         grid = false,
-        item_table = DownloadsUI.buildDownloadsMenuTable(snapshot or {}, {}),
+        item_table = DownloadsUI.buildDownloadsMenuTable(
+            snapshot or {},
+            callbacks,
+            { download_directory_summary = home._suwayomi_download_directory_summary }
+        ),
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = "Downloads",
             right_text = " ",
@@ -184,6 +189,8 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     home_ref.home = home
     home._suwayomi_bottom_bar = bottom_bar
     home._suwayomi_get_downloads_snapshot = options.getDownloadsSnapshot
+    home._suwayomi_downloads_callbacks = options.downloads_callbacks
+    home._suwayomi_download_directory_summary = options.download_directory_summary
     home.tabs = {}
 
     local library_menu = buildLibraryMenu(
