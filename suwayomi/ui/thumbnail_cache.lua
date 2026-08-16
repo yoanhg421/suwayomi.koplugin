@@ -78,7 +78,7 @@ function ThumbnailCache.getExtension(content_type, thumbnail_url)
         return "png"
     end
     if content_type == "image/webp" then
-        return DECODED_EXTENSION
+        return "webp"
     end
     if content_type == "image/gif" then
         return "gif"
@@ -92,7 +92,7 @@ function ThumbnailCache.getExtension(content_type, thumbnail_url)
 
     local suffix = tostring(thumbnail_url or ""):lower():match("%.([%w]+)%??[^/]*$")
     if suffix == "webp" then
-        return DECODED_EXTENSION
+        return "webp"
     end
     if suffix == "jpeg" or suffix == "jpg" or suffix == "png" or suffix == "gif" or suffix == "svg" then
         return suffix == "jpeg" and "jpg" or suffix
@@ -216,7 +216,8 @@ function ThumbnailCache.writeDecoded(credentials, thumbnail_url, bitmap, options
     local rotation = tonumber(bitmap:getRotation()) or 0
     local inverse = tonumber(bitmap:getInverse()) or 0
     local data = Blitbuffer.tostring(bitmap)
-    local path = ThumbnailCache.getPath(credentials, thumbnail_url, "image/webp", options)
+    local key = ThumbnailCache.getKey(credentials, thumbnail_url, options)
+    local path = FFIUtil.joinPath(getCacheDir(), key .. "." .. DECODED_EXTENSION)
     local handle = io.open(path, "wb")
     if not handle then
         return nil, "Could not write thumbnail cache."
@@ -238,6 +239,21 @@ function ThumbnailCache.writeDecoded(credentials, thumbnail_url, bitmap, options
         return nil, write_error or "Could not write thumbnail cache."
     end
     return path
+end
+
+function ThumbnailCache.findRaw(credentials, thumbnail_url)
+    if not thumbnail_url or thumbnail_url == "" then
+        return nil
+    end
+    local key = ThumbnailCache.getKey(credentials, thumbnail_url, { variant = "raw" })
+    local cache_dir = getCacheDir()
+    for _, extension in ipairs(RAW_IMAGE_EXTENSIONS) do
+        local path = FFIUtil.joinPath(cache_dir, key .. "." .. extension)
+        if lfs.attributes(path, "mode") == "file" then
+            return path
+        end
+    end
+    return nil
 end
 
 function ThumbnailCache.loadDecoded(path)

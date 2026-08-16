@@ -473,7 +473,7 @@ local function thumbnailCredentials(options)
     return credentials
 end
 
-local function findCachedPosterPath(manga, options, cache_options)
+local function findCachedPosterPath(manga, options)
     manga = manga or {}
     if not cleanText(manga.thumbnail_url) then
         return nil
@@ -482,15 +482,15 @@ local function findCachedPosterPath(manga, options, cache_options)
     if not ok_cache then
         return nil
     end
-    return ThumbnailCache.find(thumbnailCredentials(options), manga.thumbnail_url, cache_options or POSTER_CACHE_OPTIONS)
+    return ThumbnailCache.findRaw(thumbnailCredentials(options), manga.thumbnail_url)
 end
 
-local function findPosterPath(manga, options, cache_options)
+local function findPosterPath(manga, options)
     manga = manga or {}
     if cleanText(options and options.poster_path) then
         return options.poster_path
     end
-    local poster_path = findCachedPosterPath(manga, options, cache_options)
+    local poster_path = findCachedPosterPath(manga, options)
     if poster_path then
         return poster_path
     end
@@ -578,8 +578,7 @@ local function bindDialog(widget, dialog)
 end
 
 local function buildPosterWidget(modules, manga, options, width, height)
-    local cache_options = options and options.poster_cache_options
-    local poster_path = findPosterPath(manga, options, cache_options)
+    local poster_path = findPosterPath(manga, options)
     local poster_image = loadPosterImage(poster_path)
     local poster
     if poster_image then
@@ -588,7 +587,14 @@ local function buildPosterWidget(modules, manga, options, width, height)
             width = width,
             height = height,
             scale_factor = 0,
-            use_legacy_image_scaling = true,
+        })
+    end
+    if not poster and poster_path then
+        poster = safeNew(modules.ImageWidget, {
+            file = poster_path,
+            width = width,
+            height = height,
+            scale_factor = 0,
         })
     end
     if not poster then
@@ -817,8 +823,7 @@ local function buildDialog(modules, manga, options)
     end
 
     function Dialog:startPosterJob()
-        local cache_options = (self.content_layout and self.content_layout.poster_cache_options) or POSTER_CACHE_OPTIONS
-        if self.poster_job or findCachedPosterPath(self.manga, self.options, cache_options) or cleanText(self.options and self.options.poster_path) then
+        if self.poster_job or findCachedPosterPath(self.manga, self.options) or cleanText(self.options and self.options.poster_path) then
             return
         end
         local thumbnail_url = cleanText(self.manga and self.manga.thumbnail_url)
@@ -843,7 +848,7 @@ local function buildDialog(modules, manga, options)
             poll_interval_seconds = 0.5,
             timeout_seconds = 15,
             run = function(path)
-                ThumbnailWorker:run(credentials, thumbnail_url, path, cache_options)
+                ThumbnailWorker:run(credentials, thumbnail_url, path)
             end,
             read_result = function(path)
                 return ThumbnailWorker:readResult(path)

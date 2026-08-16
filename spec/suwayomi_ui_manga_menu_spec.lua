@@ -249,6 +249,10 @@ describe("suwayomi/ui/manga_menu", function()
                 find = function(_, thumbnail_url)
                     return cache_paths[thumbnail_url]
                 end,
+                findRaw = function(_, thumbnail_url)
+                    return cache_paths[thumbnail_url]
+                end,
+                write = function() end,
                 isDecodedPath = function(path)
                     return tostring(path or ""):match("%.bb$") ~= nil
                 end,
@@ -599,7 +603,7 @@ describe("suwayomi/ui/manga_menu", function()
         assert.are.equal(0, #started_jobs)
     end)
 
-    it("requests distinct poster-shaped cache variants for uncached manga thumbnails", function()
+    it("requests the raw cache variant for uncached poster-shaped thumbnails", function()
         local seen_options
         package.loaded["suwayomi/ui/thumbnail_cache"] = nil
         package.preload["suwayomi/ui/thumbnail_cache"] = function()
@@ -608,10 +612,13 @@ describe("suwayomi/ui/manga_menu", function()
                     seen_options = options
                     return "key:" .. tostring(thumbnail_url) .. ":" .. tostring(options and options.variant)
                 end,
-                find = function(_, _, options)
-                    seen_options = options
+                find = function()
                     return nil
                 end,
+                findRaw = function()
+                    return nil
+                end,
+                write = function() end,
                 isDecodedPath = function()
                     return false
                 end,
@@ -636,13 +643,9 @@ describe("suwayomi/ui/manga_menu", function()
 
         assert.are.same({
             variant = "raw",
-            width = 240,
-            height = 360,
         }, seen_options)
         assert.are.same({
             variant = "raw",
-            width = 240,
-            height = 360,
         }, started_jobs[1].thumbnail_options)
     end)
 
@@ -667,6 +670,7 @@ describe("suwayomi/ui/manga_menu", function()
 
     it("uses the placeholder when decoded cached thumbnails cannot be loaded", function()
         cache_paths["/cached.webp"] = "/settings/cached.bb"
+        image_errors["/settings/cached.bb"] = "could not load"
         local manga_menu = require("suwayomi/ui/manga_menu")
 
         local menu = manga_menu.show{
@@ -681,7 +685,7 @@ describe("suwayomi/ui/manga_menu", function()
         assert.is_not_nil(findWidgetByKind(menu.item_group[1], "text"))
     end)
 
-    it("uses the placeholder instead of rendering raw cached thumbnail files", function()
+    it("renders raw cached thumbnail files as image widgets", function()
         cache_paths["/cached.jpg"] = "/settings/cached.jpg"
         local manga_menu = require("suwayomi/ui/manga_menu")
 
@@ -693,8 +697,10 @@ describe("suwayomi/ui/manga_menu", function()
             },
         }
 
-        assert.is_nil(findWidgetByKind(menu.item_group[1], "image"))
-        assert.is_not_nil(findWidgetByKind(menu.item_group[1], "text"))
+        local image = findWidgetByKind(menu.item_group[1], "image")
+        assert.is_not_nil(image)
+        assert.are.equal("/settings/cached.jpg", image.file)
+        assert.is_nil(image.image)
     end)
 
     it("cancels active thumbnail jobs when menu contents are replaced", function()

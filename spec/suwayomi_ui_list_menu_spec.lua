@@ -146,7 +146,10 @@ describe("suwayomi/ui/list_menu", function()
             return {}
         end
         package.preload["suwayomi/ui/thumbnail_cache"] = function()
-            return {}
+            return {
+                findRaw = function() end,
+                write = function() end,
+            }
         end
         package.preload["suwayomi/ui/thumbnail_worker"] = function()
             return {}
