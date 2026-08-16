@@ -124,19 +124,13 @@ function FullSyncWorker:run(credentials, manga_list, result_path)
 
     for _, manga in ipairs(manga_list or {}) do
         local previous = previous_manga_map[tostring(manga and manga.id)]
-        local unchanged = previous
-            and previous.chapters_last_fetched_at
-            and manga and manga.chapters_last_fetched_at
-            and previous.chapters_last_fetched_at == manga.chapters_last_fetched_at
-        if not unchanged then
-            if syncMangaChapters(credentials, manga) then
-                synced = synced + 1
-            else
-                skipped = skipped + 1
-            end
-            if manga and manga.thumbnail_url and manga.thumbnail_url ~= "" then
-                syncMangaCover(credentials, manga, previous)
-            end
+        if syncMangaChapters(credentials, manga) then
+            synced = synced + 1
+        else
+            skipped = skipped + 1
+        end
+        if manga and manga.thumbnail_url and manga.thumbnail_url ~= "" then
+            syncMangaCover(credentials, manga, previous)
         end
         yieldToUI()
     end
