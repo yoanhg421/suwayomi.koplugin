@@ -13,6 +13,9 @@ local ThumbnailCache = require("suwayomi/ui/thumbnail_cache")
 
 local ThumbnailWorker = {}
 ThumbnailWorker.MAX_THUMBNAIL_BYTES = ThumbnailCache.MAX_THUMBNAIL_BYTES or 2 * 1024 * 1024
+ThumbnailWorker.DECODED_THUMBNAIL_SIZE = 96
+ThumbnailWorker.POSTER_WIDTH = 240
+ThumbnailWorker.POSTER_HEIGHT = 360
 
 local SUPPORTED_IMAGE_TYPES = {
     ["image/gif"] = true,
@@ -69,8 +72,50 @@ function ThumbnailWorker:readResult(result_path)
     end)
 end
 
-function ThumbnailWorker:writeThumbnail(credentials, thumbnail_url, body, image_type, _options)
-    return ThumbnailCache.write(credentials, thumbnail_url, body, image_type, { variant = "raw" })
+local function freeBitmap(bitmap)
+    if bitmap and bitmap.free then
+        pcall(function()
+            bitmap:free()
+        end)
+    end
+end
+
+local function normalizeDecodeOptions(options)
+    local variant = type(options) == "table" and options.variant or nil
+    return {
+        variant = variant,
+        width = ThumbnailWorker.POSTER_WIDTH,
+        height = ThumbnailWorker.POSTER_HEIGHT,
+    }
+end
+
+function ThumbnailWorker:writeDecodedThumbnail(credentials, thumbnail_url, body, options)
+    local ok, RenderImage = pcall(require, "ui/renderimage")
+    if not ok or not RenderImage then
+        return nil, "Could not decode thumbnail."
+    end
+
+    local decode_options = normalizeDecodeOptions(options)
+    local rendered_ok, bitmap = pcall(function()
+        return RenderImage:renderImageData(body, #body, false, decode_options.width, decode_options.height)
+    end)
+    if not rendered_ok or not bitmap then
+        freeBitmap(bitmap)
+        return nil, "Could not decode thumbnail."
+    end
+
+    local write_ok, path, write_error = pcall(function()
+        return ThumbnailCache.writeDecoded(credentials, thumbnail_url, bitmap, options and decode_options or nil)
+    end)
+    freeBitmap(bitmap)
+    if not write_ok then
+        return nil, tostring(path)
+    end
+    return path, write_error
+end
+
+function ThumbnailWorker:writeThumbnail(credentials, thumbnail_url, body, _image_type, options)
+    return self:writeDecodedThumbnail(credentials, thumbnail_url, body, options)
 end
 
 function ThumbnailWorker:run(credentials, thumbnail_url, result_path, options)

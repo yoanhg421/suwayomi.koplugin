@@ -205,7 +205,7 @@ describe("suwayomi/ui/thumbnail_cache", function()
     it("removes oversized decoded thumbnails instead of returning them to the UI", function()
         local cache = require("suwayomi/ui/thumbnail_cache")
         local credentials = { server_url = "https://suwayomi.example" }
-        local path = "/settings/suwayomi_thumbnails/" .. cache.getKey(credentials, "/cover.webp") .. ".bb"
+        local path = cache.getPath(credentials, "/cover.webp", "image/webp")
         written_files[path] = {
             mode = "wb",
             body = "BBDATA",
@@ -214,18 +214,6 @@ describe("suwayomi/ui/thumbnail_cache", function()
 
         assert.is_nil(cache.find(credentials, "/cover.webp"))
         assert.are.same({ path }, removed_files)
-    end)
-
-    it("finds raw image cache files with findRaw", function()
-        local cache = require("suwayomi/ui/thumbnail_cache")
-        local credentials = { server_url = "https://suwayomi.example" }
-
-        local path = cache.write(credentials, "/cover.webp", "WEBPDATA", "image/webp", { variant = "raw" })
-
-        assert.is_not_nil(path)
-        assert.are.equal(path, cache.findRaw(credentials, "/cover.webp"))
-        assert.are.equal("WEBPDATA", written_files[path].body)
-        assert.is_nil(cache.findRaw(credentials, "/missing.jpg"))
     end)
 
     it("writes and loads decoded WebP bitmap thumbnails", function()

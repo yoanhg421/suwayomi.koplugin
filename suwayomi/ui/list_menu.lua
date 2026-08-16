@@ -216,6 +216,8 @@ end
 
 local RAW_THUMBNAIL_OPTIONS = {
     variant = "raw",
+    width = 240,
+    height = 360,
 }
 
 local function thumbnailSlotDimensions(item, row_height, fallback_height)
@@ -319,13 +321,7 @@ function ListMenuItem:buildThumbnail(slot_width, slot_height)
                 width = image_width,
                 height = image_height,
                 scale_factor = 0,
-            }
-        else
-            image = newImageWidget{
-                file = self.entry.thumbnail_path,
-                width = image_width,
-                height = image_height,
-                scale_factor = 0,
+                use_legacy_image_scaling = true,
             }
         end
     end
@@ -544,13 +540,7 @@ function GridMenuItem:buildCoverImage(width, height)
                 width = width,
                 height = height,
                 scale_factor = 0,
-            }
-        else
-            image = newImageWidget{
-                file = self.entry.thumbnail_path,
-                width = width,
-                height = height,
-                scale_factor = 0,
+                use_legacy_image_scaling = true,
             }
         end
     end
@@ -1104,7 +1094,7 @@ function ListMenu.prepareThumbnail(menu, item)
         return
     end
     item.thumbnail_path = item.thumbnail_path
-        or ThumbnailCache.findRaw(menu._suwayomi_thumbnail_credentials, item.thumbnail_url)
+        or ThumbnailCache.find(menu._suwayomi_thumbnail_credentials, item.thumbnail_url, RAW_THUMBNAIL_OPTIONS)
     if item.thumbnail_path then
         item.thumbnail_failed = nil
     end

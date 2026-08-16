@@ -340,23 +340,6 @@ describe("suwayomi/ui", function()
                     }
                     return nil
                 end,
-                findRaw = function(credentials, thumbnail_url)
-                    if thumbnail_url == "thumb://cached" or (thumbnail_url == "thumb://missing" and events.poster_cache_ready) then
-                        events.thumbnail_lookup = {
-                            credentials = credentials,
-                            thumbnail_url = thumbnail_url,
-                            options = nil,
-                        }
-                        return "/tmp/poster.bb"
-                    end
-                    events.thumbnail_lookup = {
-                        credentials = credentials,
-                        thumbnail_url = thumbnail_url,
-                        options = nil,
-                    }
-                    return nil
-                end,
-                write = function() end,
                 isDecodedPath = function(path)
                     return path == "/tmp/poster.bb"
                 end,
@@ -796,7 +779,11 @@ describe("suwayomi/ui", function()
         assert.is_true(dialog.width > 0)
         assert.are.equal("thumb://cached", events.thumbnail_lookup.thumbnail_url)
         assert.are.equal(credentials, events.thumbnail_lookup.credentials)
-        assert.is_nil(events.thumbnail_lookup.options)
+        assert.are.same({
+            variant = "raw",
+            width = 240,
+            height = 360,
+        }, events.thumbnail_lookup.options)
 
         local title = findWidget(dialog, "titlebar")
         local title_separator = findWidget(dialog, "linewidget")
@@ -861,7 +848,11 @@ describe("suwayomi/ui", function()
         assert.are.equal("<p>No description available.</p>", description.html_body)
         assert.are.equal("thumb://missing", events.poster_worker_run.thumbnail_url)
         assert.are.equal("/tmp/manga_info_poster.json", events.poster_worker_run.result_path)
-        assert.is_nil(events.poster_worker_run.options)
+        assert.are.same({
+            variant = "raw",
+            width = 240,
+            height = 360,
+        }, events.poster_worker_run.options)
         assert.is_nil(findWidget(dialog, "imagewidget"))
         assert.is_nil(events.canceled_poster_job)
         events.poster_cache_ready = true
@@ -1049,7 +1040,11 @@ describe("suwayomi/ui", function()
             assert.are.equal(layout.description_width, description.width, case.name)
             assert.are.equal(layout.description_height, description.height, case.name)
             assert.are.equal(dialog, description.dialog, case.name)
-            assert.is_nil(events.thumbnail_lookup.options, case.name)
+            assert.are.same({
+                variant = "raw",
+                width = 240,
+                height = 360,
+            }, events.thumbnail_lookup.options, case.name)
 
             if case.mode == "stacked" then
                 assert.are.equal("body", layout.scroll_mode, case.name)

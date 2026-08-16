@@ -8,6 +8,7 @@ describe("suwayomi/ui/thumbnail_worker", function()
         package.loaded["suwayomi/api"] = nil
         package.loaded["suwayomi/subprocess/job"] = nil
         package.loaded["suwayomi/ui/thumbnail_cache"] = nil
+        package.loaded["ui/renderimage"] = nil
 
         api = {}
         cache = {}
@@ -36,11 +37,12 @@ describe("suwayomi/ui/thumbnail_worker", function()
         package.preload["suwayomi/api"] = nil
         package.preload["suwayomi/subprocess/job"] = nil
         package.preload["suwayomi/ui/thumbnail_cache"] = nil
+        package.preload["ui/renderimage"] = nil
     end)
 
-    it("downloads JPEG bytes and writes a raw cached thumbnail path", function()
+    it("downloads JPEG bytes and writes a decoded cached thumbnail path", function()
         local credentials = { server_url = "https://suwayomi.example" }
-        local written
+        local decoded_bitmap = { decoded = true, freed = false }
         api.downloadBinary = function(seen_credentials, thumbnail_url)
             assert.are.same(credentials, seen_credentials)
             assert.are.equal("/thumb.jpg", thumbnail_url)
@@ -50,22 +52,34 @@ describe("suwayomi/ui/thumbnail_worker", function()
                 content_type = "image/jpeg",
             }
         end
-        cache.write = function(seen_credentials, thumbnail_url, body, image_type, options)
+        cache.writeDecoded = function(seen_credentials, thumbnail_url, bitmap)
             assert.are.same(credentials, seen_credentials)
             assert.are.equal("/thumb.jpg", thumbnail_url)
-            assert.are.equal("jpeg bytes", body)
-            assert.are.equal("image/jpeg", image_type)
-            assert.are.same({ variant = "raw" }, options)
-            written = true
-            return "/settings/thumb.jpg"
+            assert.are.same(decoded_bitmap, bitmap)
+            return "/settings/thumb.bb"
+        end
+        package.preload["ui/renderimage"] = function()
+            return {
+                renderImageData = function(_, body, size, want_frames, width, height)
+                    assert.are.equal("jpeg bytes", body)
+                    assert.are.equal(10, size)
+                    assert.is_false(want_frames)
+                    assert.are.equal(240, width)
+                    assert.are.equal(360, height)
+                    function decoded_bitmap:free()
+                        self.freed = true
+                    end
+                    return decoded_bitmap
+                end,
+            }
         end
 
         local worker = require("suwayomi/ui/thumbnail_worker")
         local result = worker:run(credentials, "/thumb.jpg", "/tmp/result.json")
 
         assert.is_true(result.ok)
-        assert.are.equal("/settings/thumb.jpg", result.path)
-        assert.is_true(written)
+        assert.are.equal("/settings/thumb.bb", result.path)
+        assert.is_true(decoded_bitmap.freed)
         assert.are.same(result, written_results["/tmp/result.json"])
     end)
 
@@ -77,8 +91,8 @@ describe("suwayomi/ui/thumbnail_worker", function()
                 content_type = "text/html",
             }
         end
-        cache.write = function()
-            error("cache.write should not be called")
+        cache.writeDecoded = function()
+            error("cache.writeDecoded should not be called")
         end
 
         local worker = require("suwayomi/ui/thumbnail_worker")
@@ -97,8 +111,8 @@ describe("suwayomi/ui/thumbnail_worker", function()
                 content_type = "image/bmp",
             }
         end
-        cache.write = function()
-            error("cache.write should not be called")
+        cache.writeDecoded = function()
+            error("cache.writeDecoded should not be called")
         end
 
         local worker = require("suwayomi/ui/thumbnail_worker")
@@ -109,8 +123,8 @@ describe("suwayomi/ui/thumbnail_worker", function()
         assert.are.same(result, written_results["/tmp/result.json"])
     end)
 
-    it("writes WebP thumbnails into a raw cache file", function()
-        local written
+    it("decodes WebP thumbnails into a cached bitmap before they reach the UI", function()
+        local decoded_bitmap = { decoded = true, freed = false }
         api.downloadBinary = function()
             return {
                 ok = true,
@@ -118,25 +132,38 @@ describe("suwayomi/ui/thumbnail_worker", function()
                 content_type = "image/webp",
             }
         end
-        cache.write = function(_, thumbnail_url, body, image_type, options)
+        cache.writeDecoded = function(_, thumbnail_url, bitmap)
             assert.are.equal("/thumb.webp", thumbnail_url)
-            assert.are.equal("webp bytes", body)
-            assert.are.equal("image/webp", image_type)
-            assert.are.same({ variant = "raw" }, options)
-            written = true
-            return "/settings/thumb.webp"
+            assert.are.same(decoded_bitmap, bitmap)
+            return "/settings/thumb.bb"
+        end
+        package.preload["ui/renderimage"] = function()
+            return {
+                renderImageData = function(_, body, size, want_frames, width, height)
+                    assert.are.equal("webp bytes", body)
+                    assert.are.equal(10, size)
+                    assert.is_false(want_frames)
+                    assert.are.equal(240, width)
+                    assert.are.equal(360, height)
+                    function decoded_bitmap:free()
+                        self.freed = true
+                    end
+                    return decoded_bitmap
+                end,
+            }
         end
 
         local worker = require("suwayomi/ui/thumbnail_worker")
         local result = worker:run({ server_url = "https://suwayomi.example" }, "/thumb.webp", "/tmp/result.json")
 
         assert.is_true(result.ok)
-        assert.are.equal("/settings/thumb.webp", result.path)
-        assert.is_true(written)
+        assert.are.equal("/settings/thumb.bb", result.path)
+        assert.is_true(decoded_bitmap.freed)
         assert.are.same(result, written_results["/tmp/result.json"])
     end)
 
-    it("writes raw cache for poster-shaped thumbnail requests", function()
+    it("uses requested poster size and cache variant when decoding poster images", function()
+        local decoded_bitmap = { decoded = true, freed = false }
         local write_options
         api.downloadBinary = function()
             return {
@@ -145,12 +172,26 @@ describe("suwayomi/ui/thumbnail_worker", function()
                 content_type = "image/jpeg",
             }
         end
-        cache.write = function(_, thumbnail_url, body, image_type, options)
+        cache.writeDecoded = function(_, thumbnail_url, bitmap, options)
             assert.are.equal("/poster.jpg", thumbnail_url)
-            assert.are.equal("poster bytes", body)
-            assert.are.equal("image/jpeg", image_type)
+            assert.are.same(decoded_bitmap, bitmap)
             write_options = options
-            return "/settings/poster.jpg"
+            return "/settings/poster.bb"
+        end
+        package.preload["ui/renderimage"] = function()
+            return {
+                renderImageData = function(_, body, size, want_frames, width, height)
+                    assert.are.equal("poster bytes", body)
+                    assert.are.equal(12, size)
+                    assert.is_false(want_frames)
+                    assert.are.equal(240, width)
+                    assert.are.equal(360, height)
+                    function decoded_bitmap:free()
+                        self.freed = true
+                    end
+                    return decoded_bitmap
+                end,
+            }
         end
 
         local worker = require("suwayomi/ui/thumbnail_worker")
@@ -161,9 +202,13 @@ describe("suwayomi/ui/thumbnail_worker", function()
         })
 
         assert.is_true(result.ok)
-        assert.are.equal("/settings/poster.jpg", result.path)
-        assert.are.same({ variant = "raw" }, write_options)
-        assert.are.equal("poster", result.variant)
+        assert.are.equal("/settings/poster.bb", result.path)
+        assert.are.same({
+            variant = "poster",
+            width = 240,
+            height = 360,
+        }, write_options)
+        assert.is_true(decoded_bitmap.freed)
     end)
 
     it("rejects oversized thumbnail responses", function()
@@ -174,8 +219,8 @@ describe("suwayomi/ui/thumbnail_worker", function()
                 content_type = "image/jpeg",
             }
         end
-        cache.write = function()
-            error("cache.write should not be called")
+        cache.writeDecoded = function()
+            error("cache.writeDecoded should not be called")
         end
 
         local worker = require("suwayomi/ui/thumbnail_worker")
