@@ -21,20 +21,19 @@ local INACTIVE_DOT = "\u{25CB}"
 function SuwayomiPageIndicator:init()
     self.face = self.face or Font:getFace("xx_smallinfofont")
     self.dots = {}
-    self:clear(true)
+    self:clear()
     self:setActive(self.page or 1, self.total or 1)
-    HorizontalGroup.init(self)
 end
 
-function SuwayomiPageIndicator:clear(skip_init)
+function SuwayomiPageIndicator:clear()
     for _, dot in ipairs(self.dots or {}) do
         if dot.free then
             dot:free()
         end
     end
     self.dots = {}
-    if not skip_init then
-        self:resetLayout()
+    for i = #self, 1, -1 do
+        table.remove(self, i)
     end
 end
 
@@ -43,19 +42,15 @@ function SuwayomiPageIndicator:setActive(page, total)
     total = total or 1
     self:clear()
     for i = 1, total do
-        table.insert(self.dots, TextWidget:new{
+        table.insert(self, TextWidget:new{
             text = (i == page) and ACTIVE_DOT or INACTIVE_DOT,
             face = self.face,
         })
-    end
-    self[1] = nil
-    for _, dot in ipairs(self.dots) do
-        table.insert(self, dot)
         table.insert(self, HorizontalSpan:new{ width = 8 })
     end
     table.remove(self)
     self:resetLayout()
-    UIManager:setDirty(self.show_parent or self, "ui", self.dimen)
+    UIManager:setDirty(self.show_parent or self, "ui")
 end
 
 return SuwayomiPageIndicator

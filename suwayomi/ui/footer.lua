@@ -13,8 +13,6 @@ local SuwayomiFooter = VerticalGroup:extend{
 }
 
 function SuwayomiFooter:init()
-    self.dimen = nil
-    self._size = nil
     self.page_indicator = SuwayomiPageIndicator:new{
         page = 1,
         total = 1,
@@ -23,7 +21,7 @@ function SuwayomiFooter:init()
     self[1] = self.page_indicator
     self[2] = VerticalSpan:new{ width = 4 }
     self[3] = self.bottom_bar
-    VerticalGroup.init(self)
+    self:resetLayout()
 end
 
 function SuwayomiFooter:updatePage(page, total)
