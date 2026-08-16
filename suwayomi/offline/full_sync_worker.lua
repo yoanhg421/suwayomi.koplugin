@@ -75,7 +75,7 @@ local function syncMangaCover(credentials, manga, previous)
         return false
     end
     if previous and previous.thumbnail_url == manga.thumbnail_url
-            and ThumbnailCache.findRaw(credentials, manga.thumbnail_url) then
+            and ThumbnailCache.find(credentials, manga.thumbnail_url, COVER_CACHE_OPTIONS) then
         return true
     end
     local result_path = SubprocessJob.buildResultPath("thumbnail")
