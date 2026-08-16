@@ -61,20 +61,25 @@ describe("suwayomi plugin", function()
 
         assert.is_table(menu_items.suwayomi_tab)
         assert.are.equal("appbar.pokeball", menu_items.suwayomi_tab.icon)
-        assert.is_table(menu_items.suwayomi_library)
-        assert.are.equal("Library", menu_items.suwayomi_library.text)
-        assert.are.equal("suwayomi_tab", menu_items.suwayomi_library.sorting_hint)
-        assert.is_function(menu_items.suwayomi_library.callback)
+        assert.is_table(menu_items.suwayomi_open)
+        assert.are.equal("Open", menu_items.suwayomi_open.text)
+        assert.are.equal("suwayomi_tab", menu_items.suwayomi_open.sorting_hint)
+        assert.is_function(menu_items.suwayomi_open.callback)
+        assert.is_table(menu_items.suwayomi_sync)
+        assert.is_table(menu_items.suwayomi_settings)
+        assert.is_nil(menu_items.suwayomi_library)
+        assert.is_nil(menu_items.suwayomi_browse)
+        assert.is_nil(menu_items.suwayomi_downloads)
     end)
 
-    it("opens the Library from the Suwayomi tab", function()
+    it("opens the Suwayomi home from the top tab", function()
         local menu_items = {}
         local plugin = build_plugin()
 
         plugin:addToMainMenu(menu_items)
-        menu_items.suwayomi_library.callback()
+        menu_items.suwayomi_open.callback()
 
-        assert.are.equal(1, runtime.shown_library_calls)
+        assert.is_table(runtime.shown_home_dialog)
     end)
 
     it("adds only the reader return action in book mode when the document is from Suwayomi", function()

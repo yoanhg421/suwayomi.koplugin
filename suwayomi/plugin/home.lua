@@ -129,6 +129,57 @@ function Methods:buildHomeActions()
 end
 
 
+function Methods:buildMenuActions()
+    local open_action = {
+        id = "open",
+        text = I18n.t("Open"),
+        callback = function()
+            return self:showHome()
+        end,
+    }
+    if self.suwayomi_home_menu then
+        open_action.text = I18n.t("Close")
+        open_action.callback = function()
+            if self.closeSuwayomiPlugin then
+                self:closeSuwayomiPlugin()
+            end
+        end
+    end
+    return {
+        open_action,
+        {
+            id = "sync",
+            text = I18n.t("Sync"),
+            enabled = not FullSync:isRunning(),
+            callback = function()
+                if FullSync:isRunning() then
+                    self:showMessage(I18n.t("A full sync is already in progress."))
+                    return
+                end
+                local snack = SuwayomiUI.showSnack(I18n.t("Syncing..."))
+                FullSync:start(nil, function(result)
+                    SuwayomiUI.closeSnack(snack)
+                    if result and result.ok then
+                        SuwayomiUI.showSnack(I18n.f("Sync complete. %1 manga updated.", tostring(result.synced or 0)), { timeout = 2 })
+                    else
+                        SuwayomiUI.showSnack(I18n.f("Sync failed: %1", result and result.error or I18n.t("unknown error")), { timeout = 3 })
+                    end
+                end)
+            end,
+        },
+        {
+            id = "settings",
+            text = I18n.t("Settings"),
+            callback = function()
+                return self:showTopLevelScreen("settings", function()
+                    return self:showSettings()
+                end)
+            end,
+        },
+    }
+end
+
+
 function Methods:showHome()
     local dialog = SuwayomiUI.showHomeDialog({
         actions = self:buildHomeActions(),
@@ -354,7 +405,7 @@ function Methods:addToMainMenu(menu_items)
     menu_items.suwayomi_tab = { icon = "appbar.pokeball" }
 
     local suwayomi_tab_order = {}
-    for _, action in ipairs(self:buildHomeActions()) do
+    for _, action in ipairs(self:buildMenuActions()) do
         local menu_id = "suwayomi_" .. action.id
         table.insert(suwayomi_tab_order, menu_id)
         menu_items[menu_id] = {

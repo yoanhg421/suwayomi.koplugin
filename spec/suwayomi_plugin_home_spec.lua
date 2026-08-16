@@ -17,39 +17,28 @@ describe("suwayomi/plugin/home", function()
         })
     end)
 
-    it("opens first-run setup from the Suwayomi tab before showing library", function()
+    it("only exposes Open, Sync, and Settings in the Suwayomi tab", function()
         package.loaded["suwayomi/plugin/home"] = nil
         helper.stubControllerDependencies()
         local HomeController = require("suwayomi/plugin/home")
         local plugin = {
-            setup_options = nil,
-            library_shown = false,
             isBookMode = function()
                 return false
             end,
-            closeMenu = function() end,
-            needsOnboardingSetup = function()
-                return true
-            end,
-            showOnboardingSetup = function(self, options)
-                self.setup_options = options
-            end,
-            showLibrary = function(self)
-                self.library_shown = true
-            end,
         }
         for name, method in pairs(HomeController.methods) do
-            if name ~= "showHome" then
-                plugin[name] = method
-            end
+            plugin[name] = method
         end
 
         local menu_items = {}
         plugin:addToMainMenu(menu_items)
-        menu_items.suwayomi_library.callback()
 
-        assert.is_true(plugin.setup_options.first_run)
-        assert.is_false(plugin.library_shown)
+        assert.is_truthy(menu_items.suwayomi_open)
+        assert.is_truthy(menu_items.suwayomi_sync)
+        assert.is_truthy(menu_items.suwayomi_settings)
+        assert.is_nil(menu_items.suwayomi_library)
+        assert.is_nil(menu_items.suwayomi_browse)
+        assert.is_nil(menu_items.suwayomi_downloads)
     end)
 
     it("routes home action labels through i18n", function()
