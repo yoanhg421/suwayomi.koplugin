@@ -713,6 +713,54 @@ function Parsers.parseChapterResponse(response_body)
     return chapters
 end
 
+function Parsers.parseChapterHistoryResponse(response_body)
+    local payload, _, err = json.decode(response_body, 1, nil)
+    if err then
+        return nil, "Invalid response from Suwayomi server."
+    end
+
+    local chapter_nodes = payload
+        and payload.data
+        and payload.data.chapters
+        and payload.data.chapters.nodes
+
+    if type(chapter_nodes) ~= "table" then
+        local graph_error = payload and payload.errors and payload.errors[1] and payload.errors[1].message
+        return nil, graph_error or "Suwayomi server did not return chapter history."
+    end
+
+    local history = {}
+    for _, entry in ipairs(chapter_nodes) do
+        if type(entry) ~= "table" then
+            return nil, "Suwayomi server returned invalid chapter history."
+        end
+        local manga = entry.manga
+        table.insert(history, {
+            id = tostring(entry.id),
+            name = tostring(entry.name or ""),
+            manga_id = tostring(entry.mangaId or ""),
+            source_order = tonumber(entry.sourceOrder) or 0,
+            chapter_number = tonumber(entry.chapterNumber) or 0,
+            is_read = entry.isRead == true,
+            is_downloaded = entry.isDownloaded == true,
+            is_bookmarked = entry.isBookmarked == true,
+            last_read_at = tonumber(entry.lastReadAt) or 0,
+            manga = manga and {
+                id = tostring(manga.id),
+                title = tostring(manga.title or ""),
+                thumbnail_url = manga.thumbnailUrl,
+                thumbnail_url_last_fetched = tonumber(manga.thumbnailUrlLastFetched) or 0,
+                in_library = manga.inLibrary == true,
+                initialized = manga.initialized == true,
+                source_id = tostring(manga.sourceId or ""),
+                source = parseSource(manga.source),
+            } or nil,
+        })
+    end
+
+    return history
+end
+
 function Parsers.parseChapterPagesResponse(response_body)
     local payload, _, err = json.decode(response_body, 1, nil)
     if err then

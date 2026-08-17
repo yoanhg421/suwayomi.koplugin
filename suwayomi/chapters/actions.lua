@@ -62,6 +62,12 @@ function Methods:openChapter(manga, chapter)
         })
     end
 
+    self.current_reading_chapter = {
+        manga = manga,
+        chapter = chapter,
+        path = chapter_path,
+    }
+
     if ReaderUI.instance and ReaderUI.instance.switchDocument then
         ReaderUI.instance:switchDocument(chapter_path)
     elseif ReaderUI.showReader then

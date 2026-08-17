@@ -70,6 +70,29 @@ local COVER_CACHE_OPTIONS = {
     height = 360,
 }
 
+local function syncChapterHistory(credentials)
+    if not credentials or credentials.server_url == "" then
+        return
+    end
+    local ok, result = pcall(function()
+        return SuwayomiAPI.fetchChapterHistory(credentials, { first = 50 })
+    end)
+    if not ok or not result or not result.ok then
+        return
+    end
+    local seen = {}
+    local recent_manga = {}
+    for _, entry in ipairs(result.history or {}) do
+        if entry and entry.manga and not seen[tostring(entry.manga.id)] then
+            seen[tostring(entry.manga.id)] = true
+            entry.manga._suwayomi_last_read_at = tonumber(entry.last_read_at) or 0
+            table.insert(recent_manga, entry.manga)
+        end
+    end
+    SuwayomiOfflineStore:setChapterHistory(result.history or {})
+    SuwayomiOfflineStore:setRecentMangaList(recent_manga)
+end
+
 local function syncMangaCover(credentials, manga, previous)
     if not manga or not manga.thumbnail_url or manga.thumbnail_url == "" then
         return false
@@ -121,6 +144,7 @@ function FullSyncWorker:run(credentials, manga_list, result_path)
     end
 
     SuwayomiOfflineSync:syncLibraryManga({ manga = manga_list })
+    syncChapterHistory(credentials)
 
     for _, manga in ipairs(manga_list or {}) do
         local previous = previous_manga_map[tostring(manga and manga.id)]

@@ -197,13 +197,33 @@ local function buildRecentMenu(onSelectCallback, bottom_bar, home, options)
     options = options or {}
     local left, right = buildStatusStrings()
     local footer = buildFooter(bottom_bar, home)
+    local chapter_history = SuwayomiOfflineStore:getChapterHistory()
+    local manga_map = SuwayomiOfflineStore:getMangaMap()
+    local recent_manga = {}
+    local seen = {}
+    for _, entry in ipairs(chapter_history or {}) do
+        local manga = entry.manga
+        if manga and not seen[tostring(manga.id)] then
+            seen[tostring(manga.id)] = true
+            local full_manga = manga_map and manga_map[tostring(manga.id)] or manga
+            table.insert(recent_manga, full_manga)
+        end
+    end
+    local item_table
+    if #recent_manga == 0 then
+        item_table = {
+            { text = "No recent chapters", select_enabled = false },
+        }
+    else
+        item_table = ListRows.buildMangaMenuTable(recent_manga, {
+            show_in_library = false,
+            on_select = onSelectCallback,
+        })
+    end
     local menu_options = {
         title = nil,
         grid = true,
-        item_table = ListRows.buildMangaMenuTable(SuwayomiOfflineStore:getMangaListByLastRead(), {
-            show_in_library = false,
-            on_select = onSelectCallback,
-        }),
+        item_table = item_table,
         custom_title_bar = SuwayomiStatusBar:new{
             left_text = left,
             right_text = right,
@@ -212,7 +232,18 @@ local function buildRecentMenu(onSelectCallback, bottom_bar, home, options)
         thumbnail_credentials = options.thumbnail_credentials,
         on_page_changed = onPageChanged,
     }
+    for _, item in ipairs(menu_options.item_table) do
+        item.keep_menu_open = true
+    end
     local menu = ListMenu.create(menu_options)
+    if menu and menu.perpage and #menu.item_table > menu.perpage then
+        for i = #menu.item_table, menu.perpage + 1, -1 do
+            table.remove(menu.item_table, i)
+        end
+        if menu.updateItems then
+            menu:updateItems()
+        end
+    end
     if menu.title_bar then
         menu.title_bar.show_parent = home
     end
@@ -302,7 +333,9 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     )
     home.tabs.library = library_menu
 
+    home._suwayomi_current_tab = "library"
     home.showTab = function(self, tab_id)
+        self._suwayomi_current_tab = tab_id
         if self.menu then
             if self.menu._suwayomi_status_update then
                 UIManager:unschedule(self.menu._suwayomi_status_update)
@@ -347,6 +380,17 @@ function SuwayomiHome.show(manga_list, onSelectCallback, options)
     end
 
     attachMenuToHome(library_menu, bottom_bar, home)
+
+    home._suwayomi_reopen = function()
+        local saved_tab = home._suwayomi_current_tab or "library"
+        local new_menu = SuwayomiHome.show(manga_list, onSelectCallback, options)
+        if new_menu and new_menu.show_parent and saved_tab ~= "library" then
+            local new_home = new_menu.show_parent
+            UIManager:nextTick(function()
+                new_home:showTab(saved_tab)
+            end)
+        end
+    end
 
     UIManager:show(home)
     scheduleStatusRefresh(library_menu)

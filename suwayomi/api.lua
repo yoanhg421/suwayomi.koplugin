@@ -35,6 +35,7 @@ local query_exports = {
     "_buildRefreshMangaMutation",
     "_buildLegacyRefreshMangaMutation",
     "_buildChapterQuery",
+    "_buildChapterHistoryQuery",
     "_buildChapterPagesQuery",
     "_buildStoredChapterQuery",
     "_buildUpdateChapterReadMutation",
@@ -66,6 +67,7 @@ local parser_exports = {
     "parseUpdateMangaLibraryResponse",
     "parseRefreshMangaResponse",
     "parseChapterResponse",
+    "parseChapterHistoryResponse",
     "parseChapterPagesResponse",
     "parseStoredChapterResponse",
     "parseMarkChapterReadResponse",
@@ -552,9 +554,10 @@ function SuwayomiAPI.markChapterUnread(credentials, chapter_id)
 end
 
 function SuwayomiAPI.markChaptersReadState(credentials, chapter_ids, is_read)
+    local last_read_at = is_read and tostring(os.time() * 1000) or "0"
     local result = performGraphQLRequest(
         credentials,
-        SuwayomiAPI._buildUpdateChaptersReadMutation(chapter_ids, is_read),
+        SuwayomiAPI._buildUpdateChaptersReadMutation(chapter_ids, is_read, last_read_at),
         "markChaptersReadState"
     )
     if not result.ok then
@@ -599,6 +602,27 @@ function SuwayomiAPI.fetchChaptersForManga(credentials, manga_id)
     return {
         ok = true,
         chapters = chapters,
+    }
+end
+
+function SuwayomiAPI.fetchChapterHistory(credentials, options)
+    local result = performGraphQLRequest(credentials, SuwayomiAPI._buildChapterHistoryQuery(options), "fetchChapterHistory")
+    if not result.ok then
+        return result
+    end
+
+    local history, parse_error = SuwayomiAPI.parseChapterHistoryResponse(result.response_body)
+    if not history then
+        logDebugEvent({ operation = "fetchChapterHistory", event = "parse_error", error = parse_error })
+        return {
+            ok = false,
+            error = parse_error,
+        }
+    end
+
+    return {
+        ok = true,
+        history = history,
     }
 end
 

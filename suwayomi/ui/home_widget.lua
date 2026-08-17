@@ -5,6 +5,8 @@
 -- Owned state: the ListMenu child and the FileManager passthrough helpers.
 -- Dependencies: ListMenu, InputContainer, KOReader UIManager and Device.
 
+local UIManager = require("ui/uimanager")
+local Device = require("device")
 local InputContainer = require("ui/widget/container/inputcontainer")
 
 local SuwayomiHomeWidget = InputContainer:extend{
@@ -96,7 +98,51 @@ function SuwayomiHomeWidget:init()
     end
 end
 
+function SuwayomiHomeWidget:_reopenAfterResize()
+    if self._resize_reopen_pending then return end
+    self._resize_reopen_pending = true
+    UIManager:nextTick(function()
+        self._resize_reopen_pending = false
+        if not self._suwayomi_reopen then return end
+        UIManager:close(self)
+        self._suwayomi_reopen()
+    end)
+end
+
+function SuwayomiHomeWidget:onSetDimensions()
+    return self:_reopenAfterResize()
+end
+
+function SuwayomiHomeWidget:onScreenResize()
+    return self:_reopenAfterResize()
+end
+
+function SuwayomiHomeWidget:onSetRotationMode(mode)
+    local Screen = Device and Device.screen
+    if not Screen or not mode or mode == Screen:getRotationMode() then
+        return false
+    end
+    Screen:setRotationMode(mode)
+    self:_reopenAfterResize()
+    return true
+end
+
+local RESIZE_EVENTS = {
+    onSetDimensions = true,
+    onScreenResize = true,
+    onSetRotationMode = true,
+}
+
 function SuwayomiHomeWidget:handleEvent(event)
+    -- Resize/rotation events must be handled by the home widget BEFORE
+    -- propagating to the Menu child. KOReader's Menu has its own
+    -- onSetDimensions that calls _recalculateDimen with the cached
+    -- inner_dimen, consuming the event before our handler can fire.
+    if RESIZE_EVENTS[event.handler] then
+        if InputContainer.handleEvent(self, event) then
+            return true
+        end
+    end
     if self:propagateEvent(event) then
         return true
     end

@@ -285,6 +285,17 @@ function Queries._buildChapterQuery(manga_id)
     })
 end
 
+function Queries._buildChapterHistoryQuery(options)
+    options = options or {}
+    return json.encode({
+        query = 'query GET_CHAPTERS_HISTORY($first: Int, $offset: Int) { chapters(filter: { lastReadAt: { isNull: false, notEqualToAll: ["0"] } }, order: [{ by: LAST_READ_AT, byType: DESC }, { by: SOURCE_ORDER, byType: DESC }], first: $first, offset: $offset) { nodes { id name mangaId sourceOrder chapterNumber isRead isDownloaded isBookmarked lastReadAt manga { id title thumbnailUrl thumbnailUrlLastFetched inLibrary initialized sourceId source { id displayName name lang } } } pageInfo { endCursor hasNextPage hasPreviousPage startCursor } totalCount } }',
+        variables = {
+            first = tonumber(options.first) or 30,
+            offset = tonumber(options.offset) or 0,
+        },
+    })
+end
+
 function Queries._buildChapterPagesQuery(chapter_id)
     return json.encode({
         query = "mutation Pages($input: FetchChapterPagesInput!) { fetchChapterPages(input: $input) { pages chapter { id name chapterNumber sourceOrder manga { title } } } }",
@@ -329,10 +340,17 @@ function Queries._buildUpdateChapterReadMutation(chapter_id, is_read)
     })
 end
 
-function Queries._buildUpdateChaptersReadMutation(chapter_ids, is_read)
+function Queries._buildUpdateChaptersReadMutation(chapter_ids, is_read, last_read_at)
     local ids = {}
     for _, chapter_id in ipairs(chapter_ids or {}) do
         table.insert(ids, tonumber(chapter_id) or chapter_id)
+    end
+
+    local patch = {
+        isRead = is_read == true,
+    }
+    if last_read_at ~= nil then
+        patch.lastReadAt = last_read_at
     end
 
     return json.encode({
@@ -340,9 +358,7 @@ function Queries._buildUpdateChaptersReadMutation(chapter_ids, is_read)
         variables = {
             input = {
                 ids = ids,
-                patch = {
-                    isRead = is_read == true,
-                },
+                patch = patch,
             },
         },
     })

@@ -148,6 +148,22 @@ function SuwayomiOfflineStore:getMangaListByLastRead()
     return result
 end
 
+function SuwayomiOfflineStore:setRecentMangaList(manga_list)
+    self:open():saveSetting("recent_manga_list", manga_list or {}):flush()
+end
+
+function SuwayomiOfflineStore:getRecentMangaList()
+    return self:open():readSetting("recent_manga_list", {})
+end
+
+function SuwayomiOfflineStore:setChapterHistory(history)
+    self:open():saveSetting("chapter_history", history or {}):flush()
+end
+
+function SuwayomiOfflineStore:getChapterHistory()
+    return self:open():readSetting("chapter_history", {})
+end
+
 function SuwayomiOfflineStore:getLastSyncTime()
     return tonumber(self:open():readSetting("last_sync_at", 0)) or 0
 end

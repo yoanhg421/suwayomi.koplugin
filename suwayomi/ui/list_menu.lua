@@ -866,9 +866,6 @@ function ListMenu.recalculateDimenGrid(menu, no_recalculate_dimen)
     local nb_cols = menu.portrait_mode
         and (menu._suwayomi_grid_cols_portrait or 4)
         or (menu._suwayomi_grid_cols_landscape or 6)
-    local nb_rows = menu.portrait_mode
-        and (menu._suwayomi_grid_rows_portrait or 3)
-        or (menu._suwayomi_grid_rows_landscape or 3)
     menu.grid_columns = nb_cols
 
     local others_height = 0
@@ -890,14 +887,26 @@ function ListMenu.recalculateDimenGrid(menu, no_recalculate_dimen)
     local available_height = menu.inner_dimen.h - others_height - Size.line.thin
     menu.available_height = available_height
 
-    -- Use a fixed row/column count (rather than deriving rows from the cover
-    -- aspect ratio) so leftover vertical space doesn't get distributed into
-    -- fewer, stretched-taller rows.
+    -- Derive item dimensions from a fixed 2:3 (width:height) poster aspect
+    -- ratio so covers look the same in portrait and landscape. Compute the
+    -- column width first, then derive the row height from it, then figure
+    -- out how many rows actually fit in the available height.
     local item_width = math.max(1, math.floor((available_width - (nb_cols + 1) * GRID_ITEM_MARGIN) / nb_cols))
-    local item_height = math.max(1, math.floor((available_height - (nb_rows + 1) * GRID_ITEM_MARGIN) / nb_rows))
-    menu.grid_rows = nb_rows
+    local item_height = math.floor(item_width * 3 / 2)
+    local nb_rows_actual = math.max(1, math.floor((available_height - GRID_ITEM_MARGIN) / (item_height + GRID_ITEM_MARGIN)))
+    menu.grid_rows = nb_rows_actual
 
-    menu.perpage = nb_cols * nb_rows
+    -- Distribute leftover vertical space as dynamic row gaps (space-around)
+    -- so items fill the available height instead of clustering at the top.
+    local total_items_height = nb_rows_actual * item_height
+    local leftover_v = available_height - total_items_height - (nb_rows_actual + 1) * GRID_ITEM_MARGIN
+    local v_margin = GRID_ITEM_MARGIN
+    if leftover_v > 0 and nb_rows_actual > 0 then
+        v_margin = GRID_ITEM_MARGIN + math.floor(leftover_v / (nb_rows_actual + 1))
+    end
+    menu._suwayomi_grid_v_margin = v_margin
+
+    menu.perpage = nb_cols * nb_rows_actual
     menu.page_num = math.ceil(#menu.item_table / menu.perpage)
     if menu.page_num > 0 and menu.page > menu.page_num then
         menu.page = menu.page_num
@@ -943,9 +952,10 @@ function ListMenu.updateItemsGrid(menu, select_number, no_recalculate_dimen)
         end
     end
     local base_x = menu_x + GRID_ITEM_MARGIN
-    local base_y = menu_y + title_bar_h + GRID_ITEM_MARGIN
+    local v_margin = menu._suwayomi_grid_v_margin or GRID_ITEM_MARGIN
+    local base_y = menu_y + title_bar_h + v_margin
 
-    table.insert(menu.item_group, VerticalSpan:new{ width = GRID_ITEM_MARGIN })
+    table.insert(menu.item_group, VerticalSpan:new{ width = v_margin })
     local row
     for idx = 1, items_nb do
         local index = idx_offset + idx
@@ -970,7 +980,7 @@ function ListMenu.updateItemsGrid(menu, select_number, no_recalculate_dimen)
             row = HorizontalGroup:new{}
             table.insert(row, HorizontalSpan:new{ width = GRID_ITEM_MARGIN })
             table.insert(menu.item_group, row)
-            table.insert(menu.item_group, VerticalSpan:new{ width = GRID_ITEM_MARGIN })
+            table.insert(menu.item_group, VerticalSpan:new{ width = v_margin })
             table.insert(menu.layout, {})
         end
 
@@ -978,7 +988,7 @@ function ListMenu.updateItemsGrid(menu, select_number, no_recalculate_dimen)
         local row_index = math.floor((idx - 1) / nb_cols)
         local item_dimen = menu.item_dimen:copy()
         item_dimen.x = base_x + col * (item_width + GRID_ITEM_MARGIN)
-        item_dimen.y = base_y + row_index * (item_height + GRID_ITEM_MARGIN)
+        item_dimen.y = base_y + row_index * (item_height + v_margin)
 
         local item_widget = GridMenuItem:new{
             entry = item,

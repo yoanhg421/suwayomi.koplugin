@@ -205,6 +205,12 @@ function SuwayomiPlugin:isBookMode()
     return self.document ~= nil or (self.ui and self.ui.document ~= nil)
 end
 
+function SuwayomiPlugin:onFlushSettings()
+    if self.onCloseDocument then
+        self:onCloseDocument()
+    end
+end
+
 function SuwayomiPlugin:init()
     if SuwayomiAPI.setDebugLogger then
         SuwayomiAPI.setDebugLogger(SuwayomiDebug.log)

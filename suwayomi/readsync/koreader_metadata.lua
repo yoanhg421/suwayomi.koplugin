@@ -188,23 +188,51 @@ function Methods:setKoreaderChapterReadState(chapter_path, is_read)
 end
 
 
+local function isKoreaderMetadataTableFinished(metadata)
+    if type(metadata) ~= "table" then
+        return false
+    end
+    local summary = metadata.summary
+    if type(summary) == "table" then
+        local status = summary.status
+        if status == "complete" or status == "completed" or status == "finished" then
+            return true
+        end
+        local percent_finished = tonumber(summary.percent_finished)
+        if percent_finished ~= nil and percent_finished >= 1 then
+            return true
+        end
+    end
+    local status = metadata.status
+    if status == "complete" or status == "completed" or status == "finished" then
+        return true
+    end
+    local percent_finished = tonumber(metadata.percent_finished)
+    return percent_finished ~= nil and percent_finished >= 1
+end
+
+
 function Methods:isKoreaderMetadataFinished(metadata_path)
     local content = readBoundedLuaFile(metadata_path)
     if not content then
         return false
     end
-    local status = content:match('%["status"%]%s*=%s*"([^"]+)"')
-    if status == "complete" or status == "completed" or status == "finished" then
-        return true
+    local loader = loadstring(content)
+    if not loader then
+        return false
     end
-
-    local percent_finished = tonumber(content:match('%["percent_finished"%]%s*=%s*([%d%.]+)'))
-    return percent_finished ~= nil and percent_finished >= 1
+    setfenv(loader, {})
+    local ok, parsed = pcall(loader)
+    if not ok or type(parsed) ~= "table" then
+        return false
+    end
+    return isKoreaderMetadataTableFinished(parsed)
 end
 
 
 function Methods:isChapterPathFinishedInKoreader(chapter_path)
-    return self:isKoreaderMetadataFinished(self:getKoreaderMetadataPathForDocument(chapter_path))
+    local metadata = self:loadKoreaderMetadataTable(chapter_path)
+    return isKoreaderMetadataTableFinished(metadata)
 end
 
 

@@ -298,18 +298,30 @@ function Methods:onCloseDocument()
     end
 
     local ledger = self:loadChapterLedger()
+    local matched
     for _, entry in pairs(ledger) do
         if entry.path == document_path then
-            local already_read = entry.read == true
-            local marked = self:markLedgerEntryRead(entry)
-            if (marked or already_read) and self.deleteFinishedChaptersWhileReading then
-                local manga = mangaFromLedgerEntry(entry)
-                local chapter = chapterFromLedgerEntry(entry)
-                if manga and chapter then
-                    self:deleteFinishedChaptersWhileReading(manga, chapter)
-                end
+            matched = entry
+            break
+        end
+    end
+
+    if not matched then
+        local reading = self.current_reading_chapter
+        if reading and reading.manga and reading.chapter then
+            matched = self:upsertChapterLedgerEntry(reading.manga, reading.chapter, { path = document_path })
+        end
+    end
+
+    if matched then
+        local already_read = matched.read == true
+        local marked = self:markLedgerEntryRead(matched)
+        if (marked or already_read) and self.deleteFinishedChaptersWhileReading then
+            local manga = mangaFromLedgerEntry(matched)
+            local chapter = chapterFromLedgerEntry(matched)
+            if manga and chapter then
+                self:deleteFinishedChaptersWhileReading(manga, chapter)
             end
-            return
         end
     end
 end

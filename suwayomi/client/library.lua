@@ -175,6 +175,7 @@ function SuwayomiClient:showLibraryMangaResult(category, credentials, result)
         if self.plugin.getDownloadDirectorySummary then
             menu_options.download_directory_summary = self.plugin:getDownloadDirectorySummary()
         end
+
     end
     local library_menu
     local pending_library_menu_refresh = false
